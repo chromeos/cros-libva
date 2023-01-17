@@ -36,6 +36,7 @@ pub struct MPEG2PictureCodingExtension(bindings::_VAPictureParameterBufferMPEG2_
 
 impl MPEG2PictureCodingExtension {
     /// Creates the bindgen field.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         intra_dc_precision: u32,
         picture_structure: u32,
@@ -122,6 +123,7 @@ pub struct VP8PicFields(bindings::_VAPictureParameterBufferVP8__bindgen_ty_1);
 
 impl VP8PicFields {
     /// Creates the bindgen field
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         key_frame: u32,
         version: u32,
@@ -188,6 +190,7 @@ pub struct PictureParameterBufferVP8(Box<bindings::VAPictureParameterBufferVP8>)
 
 impl PictureParameterBufferVP8 {
     /// Creates the wrapper
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         frame_width: u32,
         frame_height: u32,
@@ -250,6 +253,7 @@ pub struct VP9PicFields(bindings::_VADecPictureParameterBufferVP9__bindgen_ty_1)
 
 impl VP9PicFields {
     /// Creates the bindgen field
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         subsampling_x: u32,
         subsampling_y: u32,
@@ -319,6 +323,7 @@ pub struct PictureParameterBufferVP9(Box<bindings::VADecPictureParameterBufferVP
 
 impl PictureParameterBufferVP9 {
     /// Creates the wrapper
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         frame_width: u16,
         frame_height: u16,
@@ -394,6 +399,7 @@ pub struct H264SeqFields(bindings::_VAPictureParameterBufferH264__bindgen_ty_1);
 
 impl H264SeqFields {
     /// Creates the bindgen field
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         chroma_format_idc: u32,
         residual_colour_transform_flag: u32,
@@ -442,6 +448,7 @@ pub struct H264PicFields(bindings::_VAPictureParameterBufferH264__bindgen_ty_2);
 
 impl H264PicFields {
     /// Creates the bindgen field
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         entropy_coding_mode_flag: u32,
         weighted_pred_flag: u32,
@@ -488,6 +495,7 @@ pub struct PictureParameterBufferH264(Box<bindings::VAPictureParameterBufferH264
 
 impl PictureParameterBufferH264 {
     /// Creates the wrapper
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         curr_pic: PictureH264,
         reference_frames: [PictureH264; 16],
@@ -567,6 +575,7 @@ pub struct SliceParameterBufferMPEG2(Box<bindings::VASliceParameterBufferMPEG2>)
 
 impl SliceParameterBufferMPEG2 {
     /// Creates the wrapper.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         slice_data_size: u32,
         slice_data_offset: u32,
@@ -742,6 +751,7 @@ pub struct SliceParameterBufferH264(Box<bindings::VASliceParameterBufferH264>);
 
 impl SliceParameterBufferH264 {
     /// Creates the wrapper
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         slice_data_size: u32,
         slice_data_offset: u32,
@@ -827,6 +837,7 @@ pub struct IQMatrixBufferMPEG2(Box<bindings::VAIQMatrixBufferMPEG2>);
 
 impl IQMatrixBufferMPEG2 {
     /// Creates the wrapper.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         load_intra_quantiser_matrix: i32,
         load_non_intra_quantiser_matrix: i32,
