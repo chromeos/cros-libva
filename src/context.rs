@@ -68,8 +68,8 @@ impl Context {
     }
 
     /// Returns a shared reference to the [`Display`] used by this context.
-    pub fn display(&self) -> Rc<Display> {
-        Rc::clone(&self.display)
+    pub fn display(&self) -> &Rc<Display> {
+        &self.display
     }
 
     /// Returns the ID of this context.
