@@ -67,11 +67,7 @@ impl<'a> Image<'a> {
         // Safe since `picture.inner.context` represents a valid `VAContext` and `image` has been
         // successfully created at this point.
         match Status(unsafe {
-            bindings::vaMapBuffer(
-                picture.inner().context().display().handle(),
-                image.buf,
-                &mut addr,
-            )
+            bindings::vaMapBuffer(picture.display().handle(), image.buf, &mut addr)
         })
         .check()
         {
@@ -93,10 +89,7 @@ impl<'a> Image<'a> {
                 // Safe because `picture.inner.context` represents a valid `VAContext` and `image`
                 // represents a valid `VAImage`.
                 unsafe {
-                    bindings::vaDestroyImage(
-                        picture.inner().context().display().handle(),
-                        image.image_id,
-                    );
+                    bindings::vaDestroyImage(picture.display().handle(), image.image_id);
                 }
                 Err(e)
             }
@@ -112,7 +105,7 @@ impl<'a> Image<'a> {
         width: u32,
         height: u32,
     ) -> Result<()> {
-        let dpy = picture.inner().context().display().handle();
+        let dpy = picture.display().handle();
 
         // Safe because `picture.inner.context` represents a valid
         // VAContext.
@@ -156,7 +149,7 @@ impl<'a> Image<'a> {
     ) -> Result<bool> {
         let status = Status(unsafe {
             bindings::vaDeriveImage(
-                picture.inner().context().display().handle(),
+                picture.display().handle(),
                 picture.surface_mut().id(),
                 image,
             )
@@ -198,7 +191,7 @@ impl<'a> Drop for Image<'a> {
             // `VAImage`.
             unsafe {
                 bindings::vaPutImage(
-                    self.picture.inner().context().display().handle(),
+                    self.picture.display().handle(),
                     self.picture.surface().id(),
                     self.image.image_id,
                     0,
@@ -215,15 +208,9 @@ impl<'a> Drop for Image<'a> {
         unsafe {
             // Safe since the buffer is mapped in `Image::new`, so `self.image.buf` points to a
             // valid `VABufferID`.
-            bindings::vaUnmapBuffer(
-                self.picture.inner().context().display().handle(),
-                self.image.buf,
-            );
+            bindings::vaUnmapBuffer(self.picture.display().handle(), self.image.buf);
             // Safe since `self.image` represents a valid `VAImage`.
-            bindings::vaDestroyImage(
-                self.picture.inner().context().display().handle(),
-                self.image.image_id,
-            );
+            bindings::vaDestroyImage(self.picture.display().handle(), self.image.image_id);
         }
     }
 }

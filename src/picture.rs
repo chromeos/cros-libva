@@ -14,6 +14,7 @@ use anyhow::Result;
 use crate::bindings;
 use crate::buffer::Buffer;
 use crate::context::Context;
+use crate::display::Display;
 use crate::status::Status;
 use crate::surface::Surface;
 
@@ -77,7 +78,7 @@ pub trait PictureReclaimableSurface: PictureState + private::Sealed {}
 impl PictureReclaimableSurface for PictureNew {}
 impl PictureReclaimableSurface for PictureSync {}
 
-pub(crate) struct PictureInner {
+struct PictureInner {
     /// Timestamp of the picture.
     timestamp: u64,
     /// A context associated with this picture.
@@ -87,13 +88,6 @@ pub(crate) struct PictureInner {
     /// Contains the actual decoded data. Note that the surface may be shared in
     /// interlaced decoding.
     surface: Rc<RefCell<Surface>>,
-}
-
-impl PictureInner {
-    /// Returns a reference to the Context used by the Picture
-    pub(crate) fn context(&self) -> Rc<Context> {
-        Rc::clone(&self.context)
-    }
 }
 
 /// A `Surface` that is being rendered into.
@@ -236,9 +230,9 @@ impl<S: PictureState> Picture<S> {
         self.inner.timestamp
     }
 
-    /// Returns a reference to the `inner` struct.
-    pub(crate) fn inner(&self) -> &PictureInner {
-        self.inner.as_ref()
+    /// Returns a reference to the display owning this `Picture`.
+    pub(crate) fn display(&self) -> &Rc<Display> {
+        self.inner.context.display()
     }
 }
 
