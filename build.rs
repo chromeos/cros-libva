@@ -3,14 +3,14 @@
 // found in the LICENSE file.
 
 fn main() {
-    // Skip installing dependencies when generating documents.
-    if std::env::var("CARGO_DOC").is_ok() {
+    // Do not require dependencies when generating docs.
+    if std::env::var("CARGO_DOC").is_ok() || std::env::var("DOCS_RS").is_ok() {
         return;
     }
 
     match pkg_config::probe_library("libva") {
         Ok(_) => (),
-        Err(e) => panic!("Libva not found: {}", e),
+        Err(e) => panic!("libva not found: {}", e),
     };
 
     println!("cargo:rustc-link-lib=dylib=va");
