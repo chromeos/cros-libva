@@ -32,9 +32,8 @@ const DRM_NODE_DEFAULT_PREFIX: &str = "/dev/dri/renderD";
 const DRM_NUM_NODES: usize = 64;
 const DRM_RENDER_NODE_START: usize = 128;
 
-impl DrmDeviceIterator {
-    /// Create a new iterator over DRM render nodes on the system.
-    pub fn new() -> Self {
+impl Default for DrmDeviceIterator {
+    fn default() -> Self {
         Self {
             cur_idx: DRM_RENDER_NODE_START,
         }
@@ -116,7 +115,7 @@ impl Display {
     /// If an error occurs on a given device, it is ignored and the next one is tried until one
     /// succeeds or we reach the end of the iterator.
     pub fn open() -> Option<Rc<Self>> {
-        let devices = DrmDeviceIterator::new();
+        let devices = DrmDeviceIterator::default();
 
         // Try all the DRM devices until one succeeds.
         for device in devices {
