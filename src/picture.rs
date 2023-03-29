@@ -230,6 +230,11 @@ impl<S: PictureState> Picture<S> {
         self.inner.timestamp
     }
 
+    /// Returns the ID of the underlying surface.
+    pub fn surface_id(&self) -> bindings::VASurfaceID {
+        self.inner.surface.borrow().id()
+    }
+
     /// Returns a reference to the display owning this `Picture`.
     pub(crate) fn display(&self) -> &Rc<Display> {
         self.inner.context.display()
