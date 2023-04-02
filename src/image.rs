@@ -150,7 +150,7 @@ impl<'a> Image<'a> {
         let status = Status(unsafe {
             bindings::vaDeriveImage(
                 picture.display().handle(),
-                picture.surface_mut().id(),
+                picture.surface().id(),
                 image,
             )
         });
