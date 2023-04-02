@@ -239,6 +239,11 @@ impl<S: PictureState> Picture<S> {
     pub(crate) fn display(&self) -> &Rc<Display> {
         self.inner.context.display()
     }
+
+    /// Returns the size of the surface being rendered to by this `Picture`.
+    pub fn surface_size(&self) -> (u32, u32) {
+        self.inner.surface.borrow().size()
+    }
 }
 
 impl<S: PictureReclaimableSurface> Picture<S> {

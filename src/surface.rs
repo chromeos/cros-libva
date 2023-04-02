@@ -15,6 +15,8 @@ use crate::UsageHint;
 pub struct Surface {
     display: Rc<Display>,
     id: bindings::VASurfaceID,
+    width: u32,
+    height: u32,
 }
 
 impl Surface {
@@ -89,6 +91,8 @@ impl Surface {
             .map(|&id| Self {
                 display: Rc::clone(&display),
                 id,
+                width,
+                height,
             })
             .collect();
 
@@ -122,6 +126,11 @@ impl Surface {
     /// Returns the ID of this surface.
     pub fn id(&self) -> bindings::VASurfaceID {
         self.id
+    }
+
+    /// Returns the dimensions of this surface.
+    pub fn size(&self) -> (u32, u32) {
+        (self.width, self.height)
     }
 }
 
