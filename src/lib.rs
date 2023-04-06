@@ -218,7 +218,7 @@ mod tests {
         let picture = picture.begin().unwrap();
         let picture = picture.render().unwrap();
         let picture = picture.end().unwrap();
-        let mut picture = picture.sync().unwrap();
+        let picture = picture.sync().unwrap();
 
         // Test whether we can map the resulting surface to obtain the raw yuv
         // data
@@ -228,7 +228,7 @@ mod tests {
             .find(|f| f.fourcc == bindings::constants::VA_FOURCC_NV12)
             .expect("No valid VAImageFormat found for NV12");
 
-        let image = Image::new(&mut picture, image_fmt, width, height, false).unwrap();
+        let image = Image::new(&picture, image_fmt, width, height, false).unwrap();
 
         assert_eq!(crc_nv12_image(&image), 0xa5713e52);
     }

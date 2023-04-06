@@ -45,7 +45,7 @@ impl<'a> Image<'a> {
     ///    to the surface data. Deriving may fail, in which case vaCreateImage will be used instead,
     ///    incurring an extra data copy.
     pub fn new(
-        picture: &'a mut Picture<PictureSync>,
+        picture: &'a Picture<PictureSync>,
         mut format: bindings::VAImageFormat,
         width: u32,
         height: u32,
@@ -99,7 +99,7 @@ impl<'a> Image<'a> {
     /// Creates `image` from `picture` using `vaCreateImage` and `vaGetImage` in order to copy the
     /// surface data into the image buffer.
     fn create_image(
-        picture: &'a mut Picture<PictureSync>,
+        picture: &'a Picture<PictureSync>,
         image: &mut bindings::VAImage,
         format: &mut bindings::VAImageFormat,
         width: u32,
@@ -118,7 +118,7 @@ impl<'a> Image<'a> {
         if let Err(e) = Status(unsafe {
             bindings::vaGetImage(
                 dpy,
-                picture.surface_mut().id(),
+                picture.surface().id(),
                 0,
                 0,
                 width,
@@ -144,15 +144,11 @@ impl<'a> Image<'a> {
     /// not possible and `create_image` should be used as a fallback, or an error if an error
     /// occurred.
     fn derive_image(
-        picture: &'a mut Picture<PictureSync>,
+        picture: &'a Picture<PictureSync>,
         image: &mut bindings::VAImage,
     ) -> Result<bool> {
         let status = Status(unsafe {
-            bindings::vaDeriveImage(
-                picture.display().handle(),
-                picture.surface().id(),
-                image,
-            )
+            bindings::vaDeriveImage(picture.display().handle(), picture.surface().id(), image)
         });
 
         if status.0 == bindings::constants::VA_STATUS_ERROR_OPERATION_FAILED as i32 {
