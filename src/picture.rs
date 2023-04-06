@@ -206,13 +206,16 @@ impl Picture<PictureRender> {
 
 impl Picture<PictureEnd> {
     /// Syncs the picture, ensuring that all pending operations are complete when this call returns.
-    pub fn sync(self) -> Result<Picture<PictureSync>> {
-        self.inner.surface.borrow().sync()?;
+    pub fn sync(self) -> std::result::Result<Picture<PictureSync>, (anyhow::Error, Self)> {
+        let res = self.inner.surface.borrow().sync();
 
-        Ok(Picture {
-            inner: self.inner,
-            phantom: PhantomData,
-        })
+        match res {
+            Ok(()) => Ok(Picture {
+                inner: self.inner,
+                phantom: PhantomData,
+            }),
+            Err(e) => Err((e, self)),
+        }
     }
 
     /// Queries the status of the underlying surface.

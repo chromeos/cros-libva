@@ -218,7 +218,7 @@ mod tests {
         let picture = picture.begin().unwrap();
         let picture = picture.render().unwrap();
         let picture = picture.end().unwrap();
-        let picture = picture.sync().unwrap();
+        let picture = picture.sync().map_err(|(e, _)| e).unwrap();
 
         // Test whether we can map the resulting surface to obtain the raw yuv
         // data
