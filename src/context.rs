@@ -9,7 +9,7 @@ use log::error;
 
 use crate::bindings;
 use crate::buffer::Buffer;
-use crate::buffer_type::BufferType;
+use crate::buffer::BufferType;
 use crate::display::Display;
 use crate::status::Status;
 use crate::Config;

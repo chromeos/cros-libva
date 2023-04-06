@@ -10,8 +10,7 @@
 #![deny(missing_docs)]
 
 mod bindings;
-mod buffer;
-mod buffer_type;
+pub mod buffer;
 mod config;
 mod context;
 mod display;
@@ -32,7 +31,6 @@ pub use bindings::VASurfaceAttribType;
 pub use bindings::VASurfaceID;
 pub use bindings::VASurfaceStatus;
 pub use buffer::*;
-pub use buffer_type::*;
 pub use config::*;
 pub use context::*;
 pub use display::*;

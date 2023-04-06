@@ -2,18 +2,26 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+//! Wrappers and helpers around `VABuffer`s.
+
+mod h264;
+mod mpeg2;
+mod vp8;
+mod vp9;
+
+pub use h264::*;
+pub use mpeg2::*;
+pub use vp8::*;
+pub use vp9::*;
+
 use std::rc::Rc;
 
 use anyhow::Result;
 use log::error;
 
 use crate::bindings;
-use crate::buffer_type::BufferType;
 use crate::status::Status;
 use crate::Context;
-use crate::IQMatrix;
-use crate::PictureParameter;
-use crate::SliceParameter;
 
 /// Wrapper type representing a buffer created with `vaCreateBuffer`.
 pub struct Buffer {
@@ -131,4 +139,65 @@ impl Drop for Buffer {
             error!("vaDestroyBuffer failed: {}", status.unwrap_err());
         }
     }
+}
+
+/// Abstraction over `VABufferType`s.
+pub enum BufferType {
+    /// Abstraction over `VAPictureParameterBufferType`. Needed for MPEG2, VP8, VP9, H264.
+    PictureParameter(PictureParameter),
+    /// Abstraction over `VASliceParameterBufferType`. Needed for MPEG2, VP8, VP9, H264.
+    SliceParameter(SliceParameter),
+    /// Abstraction over `VAIQMatrixBufferType`. Needed for VP8, H264.
+    IQMatrix(IQMatrix),
+    /// Abstraction over `VAProbabilityDataBufferType`. Needed for VP8.
+    Probability(vp8::ProbabilityDataBufferVP8),
+    /// Abstraction over `VASliceDataBufferType`. Needed for VP9, H264.
+    SliceData(Vec<u8>),
+}
+
+impl BufferType {
+    /// Returns the inner FFI buffer type.
+    pub(crate) fn inner(&self) -> bindings::VABufferType::Type {
+        match self {
+            BufferType::PictureParameter(_) => bindings::VABufferType::VAPictureParameterBufferType,
+            BufferType::SliceParameter(_) => bindings::VABufferType::VASliceParameterBufferType,
+            BufferType::IQMatrix(_) => bindings::VABufferType::VAIQMatrixBufferType,
+            BufferType::Probability(_) => bindings::VABufferType::VAProbabilityBufferType,
+            BufferType::SliceData { .. } => bindings::VABufferType::VASliceDataBufferType,
+        }
+    }
+}
+
+/// Abstraction over the `PictureParameterBuffer` types we support.
+pub enum PictureParameter {
+    /// Wrapper over VAPictureParameterBufferMPEG2.
+    MPEG2(mpeg2::PictureParameterBufferMPEG2),
+    /// Wrapper over VAPictureParameterBufferVP8.
+    VP8(vp8::PictureParameterBufferVP8),
+    /// Wrapper over VAPictureParameterBufferVP9.
+    VP9(vp9::PictureParameterBufferVP9),
+    /// Wrapper over VAPictureParameterBufferH264.
+    H264(h264::PictureParameterBufferH264),
+}
+
+/// Abstraction over the `SliceParameterBuffer` types we support
+pub enum SliceParameter {
+    /// Wrapper over VASliceParameterBufferMPEG2
+    MPEG2(mpeg2::SliceParameterBufferMPEG2),
+    /// Wrapper over VASliceParameterBufferVP8
+    VP8(vp8::SliceParameterBufferVP8),
+    /// Wrapper over VASliceParameterBufferVP9
+    VP9(vp9::SliceParameterBufferVP9),
+    /// Wrapper over VASliceParameterBufferH264
+    H264(h264::SliceParameterBufferH264),
+}
+
+/// Abstraction over the `IQMatrixBuffer` types we support.
+pub enum IQMatrix {
+    /// Abstraction over `VAIQMatrixBufferMPEG2`
+    MPEG2(mpeg2::IQMatrixBufferMPEG2),
+    /// Abstraction over `VAIQMatrixBufferVP8`
+    VP8(vp8::IQMatrixBufferVP8),
+    /// Abstraction over `VAIQMatrixBufferH264`
+    H264(h264::IQMatrixBufferH264),
 }
