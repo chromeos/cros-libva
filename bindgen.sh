@@ -6,18 +6,16 @@
 # Regenerate libva bindgen bindings.
 
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-source tools/impl/bindgen-common.sh
-bindgen_generate \
+bindgen \
     --raw-line "pub mod constants;" \
     --with-derive-eq \
     --constified-enum-module "VA.*" \
     --allowlist-function "va.*" \
     --allowlist-type ".*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*" \
-    "media/libva/libva-wrapper.h" \
-    > media/libva/src/bindings/va.rs
+    "libva-wrapper.h" \
+    > src/bindings/va.rs
 
-bindgen_generate \
+bindgen \
     --allowlist-var "VA.*" \
-    "media/libva/libva-wrapper.h" \
-    > media/libva/src/bindings/va/constants.rs
+    "libva-wrapper.h" \
+    > src/bindings/va/constants.rs
