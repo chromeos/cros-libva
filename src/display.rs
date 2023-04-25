@@ -306,7 +306,7 @@ impl Display {
     }
 
     /// Returns available image formats for this display by wrapping around `vaQueryImageFormats`.
-    pub fn query_image_formats(self: &Rc<Self>) -> Result<Vec<bindings::VAImageFormat>> {
+    pub fn query_image_formats(&self) -> Result<Vec<bindings::VAImageFormat>> {
         // Safe because `self` represents a valid VADisplay.
         let mut num_image_formats = unsafe { bindings::vaMaxNumImageFormats(self.handle) };
         let mut image_formats = Vec::with_capacity(num_image_formats as usize);
