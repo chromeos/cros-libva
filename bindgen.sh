@@ -8,7 +8,9 @@
 set -euo pipefail
 bindgen \
     --raw-line "pub mod constants;" \
+    --with-derive-default \
     --with-derive-eq \
+    --no-layout-tests \
     --constified-enum-module "VA.*" \
     --allowlist-function "va.*" \
     --allowlist-type ".*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*" \
