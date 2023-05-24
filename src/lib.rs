@@ -226,7 +226,7 @@ mod tests {
             .find(|f| f.fourcc == bindings::constants::VA_FOURCC_NV12)
             .expect("No valid VAImageFormat found for NV12");
 
-        let image = Image::new(&picture, image_fmt, width, height, false).unwrap();
+        let image = picture.create_image(image_fmt, width, height).unwrap();
 
         assert_eq!(crc_nv12_image(&image), 0xa5713e52);
     }

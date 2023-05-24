@@ -17,6 +17,7 @@ use crate::context::Context;
 use crate::display::Display;
 use crate::status::Status;
 use crate::surface::Surface;
+use crate::Image;
 
 // Use the sealed trait pattern to make sure that new states are not created in caller code. More
 // information about the sealed trait pattern can be found at
@@ -224,6 +225,70 @@ impl Picture<PictureEnd> {
     /// of the surface after each decode operation instead of blocking on it.
     pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type> {
         self.inner.surface.borrow_mut().query_status()
+    }
+}
+
+impl Picture<PictureSync> {
+    /// Create a new derived image from this `Picture`.
+    ///
+    /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
+    /// `Picture`. On the other hand, not all `Pictures` can be derived.
+    pub fn derive_image(&self) -> Result<Image> {
+        // An all-zero byte-pattern is a valid initial value for `VAImage`.
+        let mut image: bindings::VAImage = Default::default();
+
+        // Safe because `self` has a valid display handle and ID.
+        Status(unsafe {
+            bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
+        })
+        .check()?;
+
+        Image::new(self, image, true)
+    }
+
+    /// Create new image from the `Picture`.
+    ///
+    /// The image will contain a copy of the `Picture` in the desired `format`, `width` and `height`.
+    pub fn create_image(
+        &self,
+        mut format: bindings::VAImageFormat,
+        width: u32,
+        height: u32,
+    ) -> Result<Image> {
+        let dpy = self.display().handle();
+        // An all-zero byte-pattern is a valid initial value for `VAImage`.
+        let mut image: bindings::VAImage = Default::default();
+
+        // Safe because `dpy` is a valid display handle.
+        Status(unsafe {
+            bindings::vaCreateImage(dpy, &mut format, width as i32, height as i32, &mut image)
+        })
+        .check()?;
+
+        // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
+        // `image` is a valid `VAImage`.
+        match Status(unsafe {
+            bindings::vaGetImage(
+                dpy,
+                self.surface().id(),
+                0,
+                0,
+                width,
+                height,
+                image.image_id,
+            )
+        })
+        .check()
+        {
+            Ok(()) => Image::new(self, image, false),
+            Err(e) => {
+                // Safe because `image` is a valid `VAImage`.
+                unsafe {
+                    bindings::vaDestroyImage(dpy, image.image_id);
+                }
+                Err(e)
+            }
+        }
     }
 }
 
