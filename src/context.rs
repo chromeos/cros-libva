@@ -27,8 +27,8 @@ impl Context {
     pub(crate) fn new(
         display: Rc<Display>,
         config: &Config,
-        coded_width: i32,
-        coded_height: i32,
+        coded_width: u32,
+        coded_height: u32,
         surfaces: Option<&Vec<Surface>>,
         progressive: bool,
     ) -> Result<Rc<Self>> {
@@ -51,8 +51,8 @@ impl Context {
             bindings::vaCreateContext(
                 display.handle(),
                 config.id(),
-                coded_width,
-                coded_height,
+                coded_width as i32,
+                coded_height as i32,
                 flags,
                 render_targets.as_mut_ptr(),
                 render_targets.len() as i32,

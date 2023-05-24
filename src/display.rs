@@ -275,8 +275,8 @@ impl Display {
     pub fn create_context(
         self: &Rc<Self>,
         config: &Config,
-        coded_width: i32,
-        coded_height: i32,
+        coded_width: u32,
+        coded_height: u32,
         surfaces: Option<&Vec<Surface>>,
         progressive: bool,
     ) -> Result<Rc<Context>> {

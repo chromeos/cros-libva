@@ -100,8 +100,8 @@ mod tests {
             .any(|e| *e == bindings::VAEntrypoint::VAEntrypointVLD));
 
         let format = bindings::constants::VA_RT_FORMAT_YUV420;
-        let width = 16;
-        let height = 16;
+        let width = 16u32;
+        let height = 16u32;
 
         let mut attrs = vec![bindings::VAConfigAttrib {
             type_: bindings::VAConfigAttribType::VAConfigAttribRTFormat,
@@ -130,8 +130,8 @@ mod tests {
         let context = display
             .create_context(
                 &config,
-                width as i32,
-                (((height + 15) / 16) * 16) as i32,
+                width,
+                (((height + 15) / 16) * 16),
                 Some(&surfaces),
                 true,
             )
