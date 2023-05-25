@@ -4,18 +4,28 @@
 
 use std::rc::Rc;
 
-use anyhow::Result;
 use log::error;
+use thiserror::Error;
 
 use crate::bindings;
 use crate::display::Display;
 use crate::generic_value::GenericValue;
 use crate::status::VaStatus;
+use crate::GenericValueError;
+use crate::VaError;
 
 /// A configuration for a given [`Display`].
 pub struct Config {
     display: Rc<Display>,
     id: bindings::VAConfigID,
+}
+
+#[derive(Debug, Error)]
+pub enum QuerySurfaceAttributesError {
+    #[error("error while calling vaQuerySurfaceAttributes: {0}")]
+    VaError(#[from] VaError),
+    #[error("error while converting attribute: {0}")]
+    GenericValueError(#[from] GenericValueError),
 }
 
 impl Config {
@@ -26,7 +36,7 @@ impl Config {
         mut attrs: Vec<bindings::VAConfigAttrib>,
         profile: bindings::VAProfile::Type,
         entrypoint: bindings::VAEntrypoint::Type,
-    ) -> Result<Self> {
+    ) -> Result<Self, VaError> {
         let mut config_id = 0u32;
 
         // Safe because `self` represents a valid `VADisplay`.
@@ -61,7 +71,7 @@ impl Config {
     // This function queries for all supported attributes for this configuration. In particular, if
     // the underlying hardware supports the creation of VA surfaces in various formats, then this
     // function will enumerate all pixel formats that are supported.
-    fn query_surface_attributes(&mut self) -> Result<Vec<bindings::VASurfaceAttrib>> {
+    fn query_surface_attributes(&mut self) -> Result<Vec<bindings::VASurfaceAttrib>, VaError> {
         // Safe because `self` represents a valid VAConfig. We first query how
         // much space is needed by the C API by passing in NULL in the first
         // call to `vaQuerySurfaceAttributes`.
@@ -104,13 +114,16 @@ impl Config {
     pub fn query_surface_attributes_by_type(
         &mut self,
         attr_type: bindings::VASurfaceAttribType::Type,
-    ) -> Result<Vec<GenericValue>> {
+    ) -> Result<Vec<GenericValue>, QuerySurfaceAttributesError> {
         let surface_attributes = self.query_surface_attributes()?;
 
         surface_attributes
             .into_iter()
             .filter(|attr| attr.type_ == attr_type)
-            .map(|attrib| GenericValue::try_from(attrib.value))
+            .map(|attr| {
+                GenericValue::try_from(attr.value)
+                    .map_err(QuerySurfaceAttributesError::GenericValueError)
+            })
             .collect()
     }
 }

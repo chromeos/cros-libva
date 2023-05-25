@@ -8,9 +8,6 @@ use std::cell::RefMut;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use anyhow::anyhow;
-use anyhow::Result;
-
 use crate::bindings;
 use crate::buffer::Buffer;
 use crate::context::Context;
@@ -18,6 +15,7 @@ use crate::display::Display;
 use crate::status::VaStatus;
 use crate::surface::Surface;
 use crate::Image;
+use crate::VaError;
 
 // Use the sealed trait pattern to make sure that new states are not created in caller code. More
 // information about the sealed trait pattern can be found at
@@ -144,19 +142,18 @@ impl Picture<PictureNew> {
     }
 
     /// Wrapper around `vaBeginPicture`.
-    pub fn begin(self) -> Result<Picture<PictureBegin>> {
+    pub fn begin(self) -> Result<Picture<PictureBegin>, VaError> {
         // Safe because `self.inner.context` represents a valid VAContext and
         // `self.inner.surface` represents a valid VASurface.
-        VaStatus(unsafe {
+        let res = VaStatus(unsafe {
             bindings::vaBeginPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
                 self.inner.surface.borrow().id(),
             )
-        })
-        .check()?;
+        });
 
-        Ok(Picture {
+        res.check().map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
         })
@@ -165,7 +162,7 @@ impl Picture<PictureNew> {
 
 impl Picture<PictureBegin> {
     /// Wrapper around `vaRenderPicture`.
-    pub fn render(self) -> Result<Picture<PictureRender>> {
+    pub fn render(self) -> Result<Picture<PictureRender>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext` and `self.inner.surface`
         // represents a valid `VASurface`. `buffers` point to a Rust struct and the vector length is
         // passed to the C function, so it is impossible to write past the end of the vector's
@@ -178,9 +175,8 @@ impl Picture<PictureBegin> {
                 self.inner.buffers.len() as i32,
             )
         })
-        .check()?;
-
-        Ok(Picture {
+        .check()
+        .map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
         })
@@ -189,7 +185,7 @@ impl Picture<PictureBegin> {
 
 impl Picture<PictureRender> {
     /// Wrapper around `vaEndPicture`.
-    pub fn end(self) -> Result<Picture<PictureEnd>> {
+    pub fn end(self) -> Result<Picture<PictureEnd>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext`.
         VaStatus(unsafe {
             bindings::vaEndPicture(
@@ -197,8 +193,8 @@ impl Picture<PictureRender> {
                 self.inner.context.id(),
             )
         })
-        .check()?;
-        Ok(Picture {
+        .check()
+        .map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
         })
@@ -207,7 +203,7 @@ impl Picture<PictureRender> {
 
 impl Picture<PictureEnd> {
     /// Syncs the picture, ensuring that all pending operations are complete when this call returns.
-    pub fn sync(self) -> std::result::Result<Picture<PictureSync>, (anyhow::Error, Self)> {
+    pub fn sync(self) -> Result<Picture<PictureSync>, (VaError, Self)> {
         let res = self.inner.surface.borrow().sync();
 
         match res {
@@ -223,7 +219,7 @@ impl Picture<PictureEnd> {
     ///
     /// This call can be used to implement a non-blocking path, wherein a decoder queries the status
     /// of the surface after each decode operation instead of blocking on it.
-    pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type> {
+    pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type, VaError> {
         self.inner.surface.borrow_mut().query_status()
     }
 }
@@ -233,7 +229,7 @@ impl Picture<PictureSync> {
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
     /// `Picture`. On the other hand, not all `Pictures` can be derived.
-    pub fn derive_image(&self) -> Result<Image> {
+    pub fn derive_image(&self) -> Result<Image, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
 
@@ -254,7 +250,7 @@ impl Picture<PictureSync> {
         mut format: bindings::VAImageFormat,
         width: u32,
         height: u32,
-    ) -> Result<Image> {
+    ) -> Result<Image, VaError> {
         let dpy = self.display().handle();
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
@@ -286,6 +282,7 @@ impl Picture<PictureSync> {
                 unsafe {
                     bindings::vaDestroyImage(dpy, image.image_id);
                 }
+
                 Err(e)
             }
         }
@@ -317,10 +314,22 @@ impl<S: PictureState> Picture<S> {
 impl<S: PictureReclaimableSurface> Picture<S> {
     /// Reclaim ownership of the Surface this picture has been created from, consuming the picture
     /// in the process. Useful if the Surface is part of a pool.
-    pub fn take_surface(self) -> Result<Surface> {
-        match Rc::try_unwrap(self.inner.surface) {
+    ///
+    /// This will fail and return the passed object if there are more than one reference to the
+    /// underlying surface.
+    pub fn take_surface(self) -> Result<Surface, Self> {
+        let inner = self.inner;
+        match Rc::try_unwrap(inner.surface) {
             Ok(surface) => Ok(surface.into_inner()),
-            Err(_) => Err(anyhow!("Surface still in use")),
+            Err(surface) => Err(Self {
+                inner: Box::new(PictureInner {
+                    surface,
+                    context: inner.context,
+                    buffers: inner.buffers,
+                    timestamp: inner.timestamp,
+                }),
+                phantom: PhantomData,
+            }),
         }
     }
 

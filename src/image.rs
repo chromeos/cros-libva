@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use anyhow::Result;
-
 use crate::bindings;
 use crate::picture::Picture;
 use crate::picture::PictureSync;
 use crate::status::VaStatus;
+use crate::VaError;
 
 /// Wrapper around `VAImage` that is tied to the lifetime of a given `Picture`.
 ///
@@ -33,7 +32,7 @@ impl<'a> Image<'a> {
         picture: &'a Picture<PictureSync>,
         image: bindings::VAImage,
         derived: bool,
-    ) -> Result<Self> {
+    ) -> Result<Self, VaError> {
         let mut addr = std::ptr::null_mut();
 
         // Safe since `picture.inner.context` represents a valid `VAContext` and `image` has been
@@ -62,6 +61,7 @@ impl<'a> Image<'a> {
                 unsafe {
                     bindings::vaDestroyImage(picture.display().handle(), image.image_id);
                 }
+
                 Err(e)
             }
         }

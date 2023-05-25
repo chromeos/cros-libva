@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use anyhow::anyhow;
-use anyhow::Result;
+use thiserror::Error;
 
 use crate::bindings;
 
@@ -20,8 +19,14 @@ pub enum GenericValue {
     Func(bindings::VAGenericFunc),
 }
 
+#[derive(Debug, Error)]
+pub enum GenericValueError {
+    #[error("unexpected VAGenericValueType {0}")]
+    UnexpectedType(u32),
+}
+
 impl TryFrom<bindings::VAGenericValue> for GenericValue {
-    type Error = anyhow::Error;
+    type Error = GenericValueError;
 
     fn try_from(value: bindings::VAGenericValue) -> Result<Self, Self::Error> {
         // Safe because we check the type before accessing the union.
@@ -39,10 +44,7 @@ impl TryFrom<bindings::VAGenericValue> for GenericValue {
             bindings::VAGenericValueType::VAGenericValueTypeFunc => {
                 Ok(Self::Func(unsafe { value.value.fn_ }))
             }
-            other => Err(anyhow!(
-                "Conversion failed for unexpected VAGenericValueType: {}",
-                other
-            )),
+            _ => Err(GenericValueError::UnexpectedType(value.type_)),
         }
     }
 }

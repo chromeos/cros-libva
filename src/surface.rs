@@ -4,12 +4,11 @@
 
 use std::rc::Rc;
 
-use anyhow::Result;
-
 use crate::bindings;
 use crate::display::Display;
 use crate::status::VaStatus;
 use crate::UsageHint;
+use crate::VaError;
 
 /// An owned VA surface that is tied to the lifetime of a particular VADisplay
 pub struct Surface {
@@ -30,7 +29,7 @@ impl Surface {
         height: u32,
         usage_hint: Option<UsageHint>,
         num_surfaces: usize,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>, VaError> {
         let mut attrs = vec![];
 
         if let Some(usage_hint) = usage_hint {
@@ -99,7 +98,7 @@ impl Surface {
 
     /// Blocks until all pending operations on the render target have been completed. Upon return it
     /// is safe to use the render target for a different picture.
-    pub fn sync(&self) -> Result<()> {
+    pub fn sync(&self) -> Result<(), VaError> {
         // Safe because `self` represents a valid VASurface.
         VaStatus(unsafe { bindings::vaSyncSurface(self.display.handle(), self.id) }).check()
     }
@@ -111,13 +110,14 @@ impl Surface {
     }
 
     /// Wrapper over `vaQuerySurfaceStatus` to find out any pending ops on the render target.
-    pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type> {
+    pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type, VaError> {
         let mut status: bindings::VASurfaceStatus::Type = 0;
         // Safe because `self` represents a valid VASurface.
         VaStatus(unsafe {
             bindings::vaQuerySurfaceStatus(self.display.handle(), self.id, &mut status)
         })
         .check()?;
+
         Ok(status)
     }
 

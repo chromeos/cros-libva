@@ -16,12 +16,12 @@ pub use vp9::*;
 
 use std::rc::Rc;
 
-use anyhow::Result;
 use log::error;
 
 use crate::bindings;
 use crate::status::VaStatus;
 use crate::Context;
+use crate::VaError;
 
 /// Wrapper type representing a buffer created with `vaCreateBuffer`.
 pub struct Buffer {
@@ -32,7 +32,7 @@ pub struct Buffer {
 impl Buffer {
     /// Creates a new buffer by wrapping a `vaCreateBuffer` call. This is just a helper for
     /// [`Context::create_buffer`].
-    pub(crate) fn new(context: Rc<Context>, mut type_: BufferType) -> Result<Self> {
+    pub(crate) fn new(context: Rc<Context>, mut type_: BufferType) -> Result<Self, VaError> {
         let mut buffer_id = 0;
 
         let (ptr, size) = match type_ {

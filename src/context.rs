@@ -4,7 +4,6 @@
 
 use std::rc::Rc;
 
-use anyhow::Result;
 use log::error;
 
 use crate::bindings;
@@ -14,6 +13,7 @@ use crate::display::Display;
 use crate::status::VaStatus;
 use crate::Config;
 use crate::Surface;
+use crate::VaError;
 
 /// A VA context for a particular [`Display`].
 pub struct Context {
@@ -31,7 +31,7 @@ impl Context {
         coded_height: u32,
         surfaces: Option<&Vec<Surface>>,
         progressive: bool,
-    ) -> Result<Rc<Self>> {
+    ) -> Result<Rc<Self>, VaError> {
         let mut context_id = 0;
         let flags = if progressive {
             bindings::constants::VA_PROGRESSIVE as i32
@@ -78,7 +78,7 @@ impl Context {
     }
 
     /// Create a new buffer of type `type_`.
-    pub fn create_buffer(self: &Rc<Self>, type_: BufferType) -> Result<Buffer> {
+    pub fn create_buffer(self: &Rc<Self>, type_: BufferType) -> Result<Buffer, VaError> {
         Buffer::new(Rc::clone(self), type_)
     }
 }

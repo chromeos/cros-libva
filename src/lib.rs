@@ -7,8 +7,6 @@
 //! The starting point to using this crate is to open a [`Display`], from which a [`Context`] and
 //! [`Surface`]s can be allocated and used for doing actual work.
 
-#![deny(missing_docs)]
-
 mod bindings;
 pub mod buffer;
 mod config;
@@ -37,6 +35,7 @@ pub use display::*;
 pub use generic_value::*;
 pub use image::*;
 pub use picture::*;
+pub use status::VaError;
 pub use surface::*;
 pub use usage_hint::*;
 

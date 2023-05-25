@@ -4,14 +4,13 @@
 
 use std::ffi::CStr;
 use std::fs::File;
+use std::io;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use anyhow::anyhow;
-use anyhow::Context as AnyhowContext;
-use anyhow::Result;
+use thiserror::Error;
 
 use crate::bindings;
 use crate::config::Config;
@@ -19,6 +18,7 @@ use crate::context::Context;
 use crate::status::VaStatus;
 use crate::surface::Surface;
 use crate::UsageHint;
+use crate::VaError;
 
 /// Iterates over existing DRM devices.
 ///
@@ -76,38 +76,48 @@ pub struct Display {
     drm_file: File,
 }
 
+/// Error type for `Display::open_drm_display`.
+#[derive(Debug, Error)]
+pub enum OpenDrmDisplayError {
+    #[error("cannot open DRM device: {0}")]
+    DeviceOpen(io::Error),
+    #[error("vaGetDisplayDRM returned NULL")]
+    VaGetDisplayDrm,
+    #[error("call to vaInitialize failed: {0}")]
+    VaInitialize(VaError),
+}
+
 impl Display {
     /// Opens and initializes a specific DRM `Display`.
     ///
     /// `path` is the path to a DRM device that supports VAAPI, e.g. `/dev/dri/renderD128`.
-    pub fn open_drm_display<P: AsRef<Path>>(path: P) -> Result<Rc<Self>> {
+    pub fn open_drm_display<P: AsRef<Path>>(path: P) -> Result<Rc<Self>, OpenDrmDisplayError> {
         let file = std::fs::File::options()
             .read(true)
             .write(true)
             .open(path.as_ref())
-            .context(format!("failed to open {}", path.as_ref().display()))?;
+            .map_err(OpenDrmDisplayError::DeviceOpen)?;
 
         // Safe because fd represents a valid file descriptor and the pointer is checked for
         // NULL afterwards.
         let display = unsafe { bindings::vaGetDisplayDRM(file.as_raw_fd()) };
         if display.is_null() {
-            // The File will close the DRM fd on drop.
-            return Err(anyhow!(
-                "failed to obtain VA display from DRM device {}",
-                path.as_ref().display()
-            ));
+            return Err(OpenDrmDisplayError::VaGetDisplayDrm);
         }
 
         let mut major = 0i32;
         let mut minor = 0i32;
         // Safe because we ensure that the display is valid (i.e not NULL) before calling
         // vaInitialize. The File will close the DRM fd on drop.
-        VaStatus(unsafe { bindings::vaInitialize(display, &mut major, &mut minor) }).check()?;
-
-        Ok(Rc::new(Self {
-            handle: display,
-            drm_file: file,
-        }))
+        VaStatus(unsafe { bindings::vaInitialize(display, &mut major, &mut minor) })
+            .check()
+            .map(|()| {
+                Rc::new(Self {
+                    handle: display,
+                    drm_file: file,
+                })
+            })
+            .map_err(OpenDrmDisplayError::VaInitialize)
     }
 
     /// Opens the first device that succeeds and returns its `Display`.
@@ -133,7 +143,7 @@ impl Display {
     }
 
     /// Queries supported profiles by this display.
-    pub fn query_config_profiles(&self) -> Result<Vec<bindings::VAProfile::Type>> {
+    pub fn query_config_profiles(&self) -> Result<Vec<bindings::VAProfile::Type>, VaError> {
         // Safe because `self` represents a valid VADisplay.
         let mut max_num_profiles = unsafe { bindings::vaMaxNumProfiles(self.handle) };
         let mut profiles = Vec::with_capacity(max_num_profiles as usize);
@@ -182,7 +192,7 @@ impl Display {
     pub fn query_config_entrypoints(
         &self,
         profile: bindings::VAProfile::Type,
-    ) -> Result<Vec<bindings::VAEntrypoint::Type>> {
+    ) -> Result<Vec<bindings::VAEntrypoint::Type>, VaError> {
         // Safe because `self` represents a valid VADisplay.
         let mut max_num_entrypoints = unsafe { bindings::vaMaxNumEntrypoints(self.handle) };
         let mut entrypoints = Vec::with_capacity(max_num_entrypoints as usize);
@@ -218,7 +228,7 @@ impl Display {
         profile: bindings::VAProfile::Type,
         entrypoint: bindings::VAEntrypoint::Type,
         attributes: &mut [bindings::VAConfigAttrib],
-    ) -> Result<()> {
+    ) -> Result<(), VaError> {
         // Safe because `self` represents a valid VADisplay. The slice length is passed to the C
         // function, so it is impossible to write past the end of the slice's storage by mistake.
         VaStatus(unsafe {
@@ -251,7 +261,7 @@ impl Display {
         height: u32,
         usage_hint: Option<UsageHint>,
         num_surfaces: usize,
-    ) -> Result<Vec<Surface>> {
+    ) -> Result<Vec<Surface>, VaError> {
         Surface::new(
             Rc::clone(self),
             rt_format,
@@ -279,7 +289,7 @@ impl Display {
         coded_height: u32,
         surfaces: Option<&Vec<Surface>>,
         progressive: bool,
-    ) -> Result<Rc<Context>> {
+    ) -> Result<Rc<Context>, VaError> {
         Context::new(
             Rc::clone(self),
             config,
@@ -301,12 +311,12 @@ impl Display {
         attrs: Vec<bindings::VAConfigAttrib>,
         profile: bindings::VAProfile::Type,
         entrypoint: bindings::VAEntrypoint::Type,
-    ) -> Result<Config> {
+    ) -> Result<Config, VaError> {
         Config::new(Rc::clone(self), attrs, profile, entrypoint)
     }
 
     /// Returns available image formats for this display by wrapping around `vaQueryImageFormats`.
-    pub fn query_image_formats(&self) -> Result<Vec<bindings::VAImageFormat>> {
+    pub fn query_image_formats(&self) -> Result<Vec<bindings::VAImageFormat>, VaError> {
         // Safe because `self` represents a valid VADisplay.
         let mut num_image_formats = unsafe { bindings::vaMaxNumImageFormats(self.handle) };
         let mut image_formats = Vec::with_capacity(num_image_formats as usize);
