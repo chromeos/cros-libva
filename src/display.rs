@@ -250,7 +250,7 @@ impl Display {
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        num_surfaces: u32,
+        num_surfaces: usize,
     ) -> Result<Vec<Surface>> {
         Surface::new(
             Rc::clone(self),

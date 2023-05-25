@@ -29,7 +29,7 @@ impl Surface {
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        num_surfaces: u32,
+        num_surfaces: usize,
     ) -> Result<Vec<Self>> {
         let mut attrs = vec![];
 
@@ -61,7 +61,7 @@ impl Surface {
             attrs.push(attr);
         }
 
-        let mut surfaces = Vec::with_capacity(num_surfaces as usize);
+        let mut surfaces = Vec::with_capacity(num_surfaces);
 
         // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
         // properly initialized and valid sizes are passed to the C function, so it is impossible to
@@ -73,7 +73,7 @@ impl Surface {
                 width,
                 height,
                 surfaces.as_mut_ptr(),
-                num_surfaces,
+                num_surfaces as u32,
                 attrs.as_mut_ptr(),
                 attrs.len() as u32,
             )
@@ -82,9 +82,7 @@ impl Surface {
 
         // Safe because the C function will have written to exactly `num_surfaces` entries, which is
         // known to be within the vector's capacity.
-        unsafe {
-            surfaces.set_len(num_surfaces as usize);
-        }
+        unsafe { surfaces.set_len(num_surfaces) };
 
         let va_surfaces = surfaces
             .iter()
