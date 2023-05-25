@@ -10,7 +10,7 @@ use log::error;
 use crate::bindings;
 use crate::display::Display;
 use crate::generic_value::GenericValue;
-use crate::status::Status;
+use crate::status::VaStatus;
 
 /// A configuration for a given [`Display`].
 pub struct Config {
@@ -33,7 +33,7 @@ impl Config {
         //
         // The `attrs` vector is also properly initialized and its actual size is passed to
         // `vaCreateConfig`, so it is impossible to write past the end of its storage by mistake.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaCreateConfig(
                 display.handle(),
                 profile,
@@ -66,7 +66,7 @@ impl Config {
         // much space is needed by the C API by passing in NULL in the first
         // call to `vaQuerySurfaceAttributes`.
         let attrs_len: std::os::raw::c_uint = 0;
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQuerySurfaceAttributes(
                 self.display.handle(),
                 self.id,
@@ -80,7 +80,7 @@ impl Config {
         // Safe because we allocate a vector with the required capacity as
         // returned by the initial call to vaQuerySurfaceAttributes. We then
         // pass a valid pointer to it.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQuerySurfaceAttributes(
                 self.display.handle(),
                 self.id,
@@ -119,7 +119,7 @@ impl Drop for Config {
     fn drop(&mut self) {
         // Safe because `self` represents a valid Config.
         let status =
-            Status(unsafe { bindings::vaDestroyConfig(self.display.handle(), self.id) }).check();
+            VaStatus(unsafe { bindings::vaDestroyConfig(self.display.handle(), self.id) }).check();
         if status.is_err() {
             error!("vaDestroyConfig failed: {}", status.unwrap_err());
         }

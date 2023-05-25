@@ -15,7 +15,7 @@ use crate::bindings;
 use crate::buffer::Buffer;
 use crate::context::Context;
 use crate::display::Display;
-use crate::status::Status;
+use crate::status::VaStatus;
 use crate::surface::Surface;
 use crate::Image;
 
@@ -147,7 +147,7 @@ impl Picture<PictureNew> {
     pub fn begin(self) -> Result<Picture<PictureBegin>> {
         // Safe because `self.inner.context` represents a valid VAContext and
         // `self.inner.surface` represents a valid VASurface.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaBeginPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
@@ -170,7 +170,7 @@ impl Picture<PictureBegin> {
         // represents a valid `VASurface`. `buffers` point to a Rust struct and the vector length is
         // passed to the C function, so it is impossible to write past the end of the vector's
         // storage by mistake.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaRenderPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
@@ -191,7 +191,7 @@ impl Picture<PictureRender> {
     /// Wrapper around `vaEndPicture`.
     pub fn end(self) -> Result<Picture<PictureEnd>> {
         // Safe because `self.inner.context` represents a valid `VAContext`.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaEndPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
@@ -238,7 +238,7 @@ impl Picture<PictureSync> {
         let mut image: bindings::VAImage = Default::default();
 
         // Safe because `self` has a valid display handle and ID.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
         })
         .check()?;
@@ -260,14 +260,14 @@ impl Picture<PictureSync> {
         let mut image: bindings::VAImage = Default::default();
 
         // Safe because `dpy` is a valid display handle.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaCreateImage(dpy, &mut format, width as i32, height as i32, &mut image)
         })
         .check()?;
 
         // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
         // `image` is a valid `VAImage`.
-        match Status(unsafe {
+        match VaStatus(unsafe {
             bindings::vaGetImage(
                 dpy,
                 self.surface().id(),

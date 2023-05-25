@@ -16,7 +16,7 @@ use anyhow::Result;
 use crate::bindings;
 use crate::config::Config;
 use crate::context::Context;
-use crate::status::Status;
+use crate::status::VaStatus;
 use crate::surface::Surface;
 use crate::UsageHint;
 
@@ -102,7 +102,7 @@ impl Display {
         let mut minor = 0i32;
         // Safe because we ensure that the display is valid (i.e not NULL) before calling
         // vaInitialize. The File will close the DRM fd on drop.
-        Status(unsafe { bindings::vaInitialize(display, &mut major, &mut minor) }).check()?;
+        VaStatus(unsafe { bindings::vaInitialize(display, &mut major, &mut minor) }).check()?;
 
         Ok(Rc::new(Self {
             handle: display,
@@ -140,7 +140,7 @@ impl Display {
 
         // Safe because `self` represents a valid `VADisplay` and the vector has `max_num_profiles`
         // as capacity.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQueryConfigProfiles(
                 self.handle,
                 profiles.as_mut_ptr(),
@@ -189,7 +189,7 @@ impl Display {
 
         // Safe because `self` represents a valid VADisplay and the vector has `max_num_entrypoints`
         // as capacity.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQueryConfigEntrypoints(
                 self.handle,
                 profile,
@@ -221,7 +221,7 @@ impl Display {
     ) -> Result<()> {
         // Safe because `self` represents a valid VADisplay. The slice length is passed to the C
         // function, so it is impossible to write past the end of the slice's storage by mistake.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaGetConfigAttributes(
                 self.handle,
                 profile,
@@ -314,7 +314,7 @@ impl Display {
         // Safe because `self` represents a valid VADisplay. The `image_formats` vector is properly
         // initialized and a valid size is passed to the C function, so it is impossible to write
         // past the end of their storage by mistake.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQueryImageFormats(
                 self.handle,
                 image_formats.as_mut_ptr(),

@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::bindings;
 use crate::display::Display;
-use crate::status::Status;
+use crate::status::VaStatus;
 use crate::UsageHint;
 
 /// An owned VA surface that is tied to the lifetime of a particular VADisplay
@@ -66,7 +66,7 @@ impl Surface {
         // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
         // properly initialized and valid sizes are passed to the C function, so it is impossible to
         // write past the end of their storage by mistake.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaCreateSurfaces(
                 display.handle(),
                 rt_format,
@@ -101,7 +101,7 @@ impl Surface {
     /// is safe to use the render target for a different picture.
     pub fn sync(&self) -> Result<()> {
         // Safe because `self` represents a valid VASurface.
-        Status(unsafe { bindings::vaSyncSurface(self.display.handle(), self.id) }).check()
+        VaStatus(unsafe { bindings::vaSyncSurface(self.display.handle(), self.id) }).check()
     }
 
     /// Convenience function to return a VASurfaceID vector. Useful to interface with the C API
@@ -114,7 +114,7 @@ impl Surface {
     pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type> {
         let mut status: bindings::VASurfaceStatus::Type = 0;
         // Safe because `self` represents a valid VASurface.
-        Status(unsafe {
+        VaStatus(unsafe {
             bindings::vaQuerySurfaceStatus(self.display.handle(), self.id, &mut status)
         })
         .check()?;

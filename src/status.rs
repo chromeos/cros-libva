@@ -11,9 +11,9 @@ use crate::bindings;
 
 /// Wrapper over `VAStatus`, calling check() returns a Error if the status is not VA_STATUS_SUCCESS.
 #[must_use = "VAStatus might not be VA_STATUS_SUCCESS."]
-pub(crate) struct Status(pub bindings::VAStatus);
+pub(crate) struct VaStatus(pub bindings::VAStatus);
 
-impl Status {
+impl VaStatus {
     /// Returns `Ok(())` if this status is successful, and an error otherwise.
     pub(crate) fn check(&self) -> Result<()> {
         if self.0 == bindings::constants::VA_STATUS_SUCCESS as i32 {

@@ -7,7 +7,7 @@ use anyhow::Result;
 use crate::bindings;
 use crate::picture::Picture;
 use crate::picture::PictureSync;
-use crate::status::Status;
+use crate::status::VaStatus;
 
 /// Wrapper around `VAImage` that is tied to the lifetime of a given `Picture`.
 ///
@@ -38,7 +38,7 @@ impl<'a> Image<'a> {
 
         // Safe since `picture.inner.context` represents a valid `VAContext` and `image` has been
         // successfully created at this point.
-        match Status(unsafe {
+        match VaStatus(unsafe {
             bindings::vaMapBuffer(picture.display().handle(), image.buf, &mut addr)
         })
         .check()
