@@ -131,7 +131,7 @@ mod tests {
             .create_context(
                 &config,
                 width,
-                (((height + 15) / 16) * 16),
+                ((height + 15) / 16) * 16,
                 Some(&surfaces),
                 true,
             )
