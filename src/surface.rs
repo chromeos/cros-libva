@@ -95,7 +95,10 @@ impl Surface {
         Ok(va_surfaces)
     }
 
-    /// Blocks until all pending operations on the render target have been completed. Upon return it
+    /// Wrapper around `vaSyncSurface` that blocks until all pending operations on the render
+    /// target have been completed.
+    ///
+    /// Upon return it
     /// is safe to use the render target for a different picture.
     pub fn sync(&self) -> Result<(), VaError> {
         // Safe because `self` represents a valid VASurface.

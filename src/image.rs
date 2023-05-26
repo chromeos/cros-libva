@@ -25,7 +25,7 @@ pub struct Image<'a> {
 }
 
 impl<'a> Image<'a> {
-    /// Helper method to map a `VAImage` and return an `Image`.
+    /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
     pub(crate) fn new(

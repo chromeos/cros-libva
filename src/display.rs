@@ -141,7 +141,7 @@ impl Display {
         self.handle
     }
 
-    /// Queries supported profiles by this display.
+    /// Queries supported profiles by this display by wrapping `vaQueryConfigProfiles`.
     pub fn query_config_profiles(&self) -> Result<Vec<bindings::VAProfile::Type>, VaError> {
         // Safe because `self` represents a valid VADisplay.
         let mut max_num_profiles = unsafe { bindings::vaMaxNumProfiles(self.handle) };
@@ -167,7 +167,7 @@ impl Display {
     }
 
     /// Returns a string describing some aspects of the VA implemenation on the specific hardware
-    /// accelerator used by this display.
+    /// accelerator used by this display. Wrapper over `vaQueryVendorString`.
     ///
     /// The format of the returned string is vendor specific and at the discretion of the
     /// implementer. e.g. for the Intel GMA500 implementation, an example would be: `Intel GMA500 -
@@ -186,7 +186,7 @@ impl Display {
             .to_string())
     }
 
-    /// Query supported entrypoints for a given profile.
+    /// Query supported entrypoints for a given profile by wrapping `vaQueryConfigEntrypoints`.
     pub fn query_config_entrypoints(
         &self,
         profile: bindings::VAProfile::Type,
@@ -216,7 +216,8 @@ impl Display {
         Ok(entrypoints)
     }
 
-    /// Writes attributes for a given `profile`/`entrypoint` pair into `attributes`.
+    /// Writes attributes for a given `profile`/`entrypoint` pair into `attributes`. Wrapper over
+    /// `vaGetConfigAttributes`.
     ///
     /// Entries of `attributes` must have their `type_` member initialized to the desired attribute
     /// to retrieve.

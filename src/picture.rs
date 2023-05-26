@@ -223,7 +223,7 @@ impl Picture<PictureEnd> {
 }
 
 impl Picture<PictureSync> {
-    /// Create a new derived image from this `Picture`.
+    /// Create a new derived image from this `Picture` using `vaDeriveImage`.
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
     /// `Picture`. On the other hand, not all `Pictures` can be derived.
@@ -239,7 +239,7 @@ impl Picture<PictureSync> {
         Image::new(self, image, true)
     }
 
-    /// Create new image from the `Picture`.
+    /// Create new image from the `Picture` using `vaCreateImage` and `vaGetImage`.
     ///
     /// The image will contain a copy of the `Picture` in the desired `format`, `width` and `height`.
     pub fn create_image(
