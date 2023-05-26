@@ -10,7 +10,7 @@ use crate::bindings;
 use crate::buffer::Buffer;
 use crate::buffer::BufferType;
 use crate::display::Display;
-use crate::status::VaStatus;
+use crate::va_check;
 use crate::Config;
 use crate::Surface;
 use crate::VaError;
@@ -47,7 +47,7 @@ impl Context {
         // Safe because `self` represents a valid VADisplay and render_targets
         // and ntargets are properly initialized. Note that render_targets==NULL
         // is valid so long as ntargets==0.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaCreateContext(
                 display.handle(),
                 config.id(),
@@ -58,8 +58,7 @@ impl Context {
                 render_targets.len() as i32,
                 &mut context_id,
             )
-        })
-        .check()?;
+        })?;
 
         Ok(Rc::new(Self {
             display,
@@ -87,7 +86,8 @@ impl Drop for Context {
     fn drop(&mut self) {
         // Safe because `self` represents a valid VAContext.
         let status =
-            VaStatus(unsafe { bindings::vaDestroyContext(self.display.handle(), self.id) }).check();
+            va_check(unsafe { bindings::vaDestroyContext(self.display.handle(), self.id) });
+
         if status.is_err() {
             error!("vaDestroyContext failed: {}", status.unwrap_err());
         }

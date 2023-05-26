@@ -12,8 +12,8 @@ use crate::bindings;
 use crate::buffer::Buffer;
 use crate::context::Context;
 use crate::display::Display;
-use crate::status::VaStatus;
 use crate::surface::Surface;
+use crate::va_check;
 use crate::Image;
 use crate::VaError;
 
@@ -145,7 +145,7 @@ impl Picture<PictureNew> {
     pub fn begin(self) -> Result<Picture<PictureBegin>, VaError> {
         // Safe because `self.inner.context` represents a valid VAContext and
         // `self.inner.surface` represents a valid VASurface.
-        let res = VaStatus(unsafe {
+        let res = va_check(unsafe {
             bindings::vaBeginPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
@@ -153,7 +153,7 @@ impl Picture<PictureNew> {
             )
         });
 
-        res.check().map(|()| Picture {
+        res.map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
         })
@@ -167,7 +167,7 @@ impl Picture<PictureBegin> {
         // represents a valid `VASurface`. `buffers` point to a Rust struct and the vector length is
         // passed to the C function, so it is impossible to write past the end of the vector's
         // storage by mistake.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaRenderPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
@@ -175,7 +175,6 @@ impl Picture<PictureBegin> {
                 self.inner.buffers.len() as i32,
             )
         })
-        .check()
         .map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
@@ -187,13 +186,12 @@ impl Picture<PictureRender> {
     /// Wrapper around `vaEndPicture`.
     pub fn end(self) -> Result<Picture<PictureEnd>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext`.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaEndPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
             )
         })
-        .check()
         .map(|()| Picture {
             inner: self.inner,
             phantom: PhantomData,
@@ -234,10 +232,9 @@ impl Picture<PictureSync> {
         let mut image: bindings::VAImage = Default::default();
 
         // Safe because `self` has a valid display handle and ID.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
-        })
-        .check()?;
+        })?;
 
         Image::new(self, image, true)
     }
@@ -256,14 +253,13 @@ impl Picture<PictureSync> {
         let mut image: bindings::VAImage = Default::default();
 
         // Safe because `dpy` is a valid display handle.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaCreateImage(dpy, &mut format, width as i32, height as i32, &mut image)
-        })
-        .check()?;
+        })?;
 
         // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
         // `image` is a valid `VAImage`.
-        match VaStatus(unsafe {
+        match va_check(unsafe {
             bindings::vaGetImage(
                 dpy,
                 self.surface().id(),
@@ -273,9 +269,7 @@ impl Picture<PictureSync> {
                 height,
                 image.image_id,
             )
-        })
-        .check()
-        {
+        }) {
             Ok(()) => Image::new(self, image, false),
             Err(e) => {
                 // Safe because `image` is a valid `VAImage`.

@@ -19,7 +19,7 @@ use std::rc::Rc;
 use log::error;
 
 use crate::bindings;
-use crate::status::VaStatus;
+use crate::va_check;
 use crate::Context;
 use crate::VaError;
 
@@ -102,7 +102,7 @@ impl Buffer {
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
         // be correct, as `ptr` is just a cast to `*c_void` from a Rust struct, and `size` is
         // computed from `std::mem::size_of_val`.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaCreateBuffer(
                 context.display().handle(),
                 context.id(),
@@ -112,8 +112,7 @@ impl Buffer {
                 ptr,
                 &mut buffer_id,
             )
-        })
-        .check()?;
+        })?;
 
         Ok(Self {
             context,
@@ -132,10 +131,10 @@ impl Drop for Buffer {
     fn drop(&mut self) {
         // Safe because `self` represents a valid buffer, created with
         // vaCreateBuffers.
-        let status = VaStatus(unsafe {
+        let status = va_check(unsafe {
             bindings::vaDestroyBuffer(self.context.display().handle(), self.id)
-        })
-        .check();
+        });
+
         if status.is_err() {
             error!("vaDestroyBuffer failed: {}", status.unwrap_err());
         }

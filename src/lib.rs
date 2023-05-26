@@ -15,7 +15,6 @@ mod display;
 mod generic_value;
 mod image;
 mod picture;
-mod status;
 mod surface;
 mod usage_hint;
 
@@ -35,9 +34,49 @@ pub use display::*;
 pub use generic_value::*;
 pub use image::*;
 pub use picture::*;
-pub use status::VaError;
 pub use surface::*;
 pub use usage_hint::*;
+
+use std::num::NonZeroI32;
+
+use crate::bindings::VAStatus;
+
+/// A `VAStatus` that is guaranteed to not be `VA_STATUS_SUCCESS`.
+#[derive(Debug)]
+pub struct VaError(NonZeroI32);
+
+impl VaError {
+    /// Returns the `VAStatus` of this error.
+    pub fn va_status(&self) -> VAStatus {
+        self.0.get() as VAStatus
+    }
+}
+
+impl std::fmt::Display for VaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use std::ffi::CStr;
+
+        // Safe because `vaErrorStr` will return a pointer to a statically allocated, null
+        // terminated C string. The pointer is guaranteed to never be null.
+        let err_str = unsafe { CStr::from_ptr(bindings::vaErrorStr(self.0.get())) }
+            .to_str()
+            .unwrap();
+        f.write_str(err_str)
+    }
+}
+
+impl std::error::Error for VaError {}
+
+/// Checks a VA return value and returns a `VaError` if it is not `VA_STATUS_SUCCESS`.
+///
+/// This can be used on the return value of any VA function returning `VAStatus` in order to
+/// convert it to a proper Rust `Result`.
+fn va_check(code: VAStatus) -> Result<(), VaError> {
+    match code as u32 {
+        constants::VA_STATUS_SUCCESS => Ok(()),
+        _ => Err(VaError(unsafe { NonZeroI32::new_unchecked(code) })),
+    }
+}
 
 #[cfg(test)]
 mod tests {

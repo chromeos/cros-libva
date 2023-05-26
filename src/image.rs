@@ -5,7 +5,7 @@
 use crate::bindings;
 use crate::picture::Picture;
 use crate::picture::PictureSync;
-use crate::status::VaStatus;
+use crate::va_check;
 use crate::VaError;
 
 /// Wrapper around `VAImage` that is tied to the lifetime of a given `Picture`.
@@ -37,11 +37,9 @@ impl<'a> Image<'a> {
 
         // Safe since `picture.inner.context` represents a valid `VAContext` and `image` has been
         // successfully created at this point.
-        match VaStatus(unsafe {
+        match va_check(unsafe {
             bindings::vaMapBuffer(picture.display().handle(), image.buf, &mut addr)
-        })
-        .check()
-        {
+        }) {
             Ok(_) => {
                 // Safe since `addr` points to data mapped onto our address space since we called
                 // `vaMapBuffer` above, which also guarantees that the data is valid for

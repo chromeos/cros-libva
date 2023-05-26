@@ -10,7 +10,7 @@ use thiserror::Error;
 use crate::bindings;
 use crate::display::Display;
 use crate::generic_value::GenericValue;
-use crate::status::VaStatus;
+use crate::va_check;
 use crate::GenericValueError;
 use crate::VaError;
 
@@ -43,7 +43,7 @@ impl Config {
         //
         // The `attrs` vector is also properly initialized and its actual size is passed to
         // `vaCreateConfig`, so it is impossible to write past the end of its storage by mistake.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaCreateConfig(
                 display.handle(),
                 profile,
@@ -52,8 +52,7 @@ impl Config {
                 attrs.len() as i32,
                 &mut config_id,
             )
-        })
-        .check()?;
+        })?;
 
         Ok(Self {
             display,
@@ -76,29 +75,27 @@ impl Config {
         // much space is needed by the C API by passing in NULL in the first
         // call to `vaQuerySurfaceAttributes`.
         let attrs_len: std::os::raw::c_uint = 0;
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaQuerySurfaceAttributes(
                 self.display.handle(),
                 self.id,
                 std::ptr::null_mut(),
                 &attrs_len as *const _ as *mut std::os::raw::c_uint,
             )
-        })
-        .check()?;
+        })?;
 
         let mut attrs = Vec::with_capacity(attrs_len as usize);
         // Safe because we allocate a vector with the required capacity as
         // returned by the initial call to vaQuerySurfaceAttributes. We then
         // pass a valid pointer to it.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaQuerySurfaceAttributes(
                 self.display.handle(),
                 self.id,
                 attrs.as_mut_ptr(),
                 &attrs_len as *const _ as *mut std::os::raw::c_uint,
             )
-        })
-        .check()?;
+        })?;
 
         // Safe because vaQuerySurfaceAttributes will have written to
         // exactly attrs_len entries in the vector.
@@ -131,8 +128,8 @@ impl Config {
 impl Drop for Config {
     fn drop(&mut self) {
         // Safe because `self` represents a valid Config.
-        let status =
-            VaStatus(unsafe { bindings::vaDestroyConfig(self.display.handle(), self.id) }).check();
+        let status = va_check(unsafe { bindings::vaDestroyConfig(self.display.handle(), self.id) });
+
         if status.is_err() {
             error!("vaDestroyConfig failed: {}", status.unwrap_err());
         }

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::bindings;
 use crate::display::Display;
-use crate::status::VaStatus;
+use crate::va_check;
 use crate::UsageHint;
 use crate::VaError;
 
@@ -65,7 +65,7 @@ impl Surface {
         // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
         // properly initialized and valid sizes are passed to the C function, so it is impossible to
         // write past the end of their storage by mistake.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaCreateSurfaces(
                 display.handle(),
                 rt_format,
@@ -76,8 +76,7 @@ impl Surface {
                 attrs.as_mut_ptr(),
                 attrs.len() as u32,
             )
-        })
-        .check()?;
+        })?;
 
         // Safe because the C function will have written to exactly `num_surfaces` entries, which is
         // known to be within the vector's capacity.
@@ -100,7 +99,7 @@ impl Surface {
     /// is safe to use the render target for a different picture.
     pub fn sync(&self) -> Result<(), VaError> {
         // Safe because `self` represents a valid VASurface.
-        VaStatus(unsafe { bindings::vaSyncSurface(self.display.handle(), self.id) }).check()
+        va_check(unsafe { bindings::vaSyncSurface(self.display.handle(), self.id) })
     }
 
     /// Convenience function to return a VASurfaceID vector. Useful to interface with the C API
@@ -113,10 +112,9 @@ impl Surface {
     pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type, VaError> {
         let mut status: bindings::VASurfaceStatus::Type = 0;
         // Safe because `self` represents a valid VASurface.
-        VaStatus(unsafe {
+        va_check(unsafe {
             bindings::vaQuerySurfaceStatus(self.display.handle(), self.id, &mut status)
-        })
-        .check()?;
+        })?;
 
         Ok(status)
     }
