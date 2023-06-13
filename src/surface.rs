@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+use std::os::fd::FromRawFd;
+use std::os::fd::OwnedFd;
 use std::rc::Rc;
 
 use crate::bindings;
@@ -148,6 +150,67 @@ impl Surface {
     pub fn size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
+
+    /// Returns a PRIME descriptor for this surface.
+    pub fn export_prime(&self) -> Result<DrmPrimeSurfaceDescriptor, VaError> {
+        let mut desc: bindings::VADRMPRIMESurfaceDescriptor = Default::default();
+
+        va_check(unsafe {
+            bindings::vaExportSurfaceHandle(
+                self.display.handle(),
+                self.id(),
+                bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                bindings::constants::VA_EXPORT_SURFACE_READ_ONLY
+                    | bindings::constants::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
+                &mut desc as *mut _ as *mut std::os::raw::c_void,
+            )
+        })?;
+
+        // We do not use a `From<VADRMPRIMESurfaceDescriptor>` implementation as this would allow
+        // to create "safe" descriptors outside of this method and thus from made up values,
+        // violating the safety guarantee that our FDs are legit.
+
+        let objects = (0..desc.num_objects as usize)
+            // Make sure we don't go out of bounds.
+            .take(4)
+            .map(|i| desc.objects[i])
+            .map(|o| {
+                DrmPrimeSurfaceDescriptorObject {
+                    // Safe because `o.fd` is a valid file descriptor returned by
+                    // `vaExportSurfaceHandle`.
+                    fd: unsafe { OwnedFd::from_raw_fd(o.fd) },
+                    size: o.size,
+                    drm_format_modifier: o.drm_format_modifier,
+                }
+            })
+            .collect();
+
+        let layers = (0..desc.num_layers as usize)
+            // Make sure we don't go out of bounds.
+            .take(4)
+            .map(|i| desc.layers[i])
+            .map(|l| DrmPrimeSurfaceDescriptorLayer {
+                drm_format: l.drm_format,
+                num_planes: l.num_planes,
+                object_index: [
+                    l.object_index[0] as u8,
+                    l.object_index[1] as u8,
+                    l.object_index[2] as u8,
+                    l.object_index[3] as u8,
+                ],
+                offset: l.offset,
+                pitch: l.pitch,
+            })
+            .collect();
+
+        Ok(DrmPrimeSurfaceDescriptor {
+            fourcc: desc.fourcc,
+            width: desc.width,
+            height: desc.height,
+            objects,
+            layers,
+        })
+    }
 }
 
 impl Drop for Surface {
@@ -155,4 +218,29 @@ impl Drop for Surface {
         // Safe because `self` represents a valid VASurface.
         unsafe { bindings::vaDestroySurfaces(self.display.handle(), &mut self.id, 1) };
     }
+}
+
+/// Safe wrapper for the `object` member of `VADRMPRIMESurfaceDescriptor`.
+pub struct DrmPrimeSurfaceDescriptorObject {
+    pub fd: OwnedFd,
+    pub size: u32,
+    pub drm_format_modifier: u64,
+}
+
+/// Safe wrapper for the `layers` member of `VADRMPRIMESurfaceDescriptor`.
+pub struct DrmPrimeSurfaceDescriptorLayer {
+    pub drm_format: u32,
+    pub num_planes: u32,
+    pub object_index: [u8; 4],
+    pub offset: [u32; 4],
+    pub pitch: [u32; 4],
+}
+
+/// Safe wrapper around `VADRMPRIMESurfaceDescriptor`.
+pub struct DrmPrimeSurfaceDescriptor {
+    pub fourcc: u32,
+    pub width: u32,
+    pub height: u32,
+    pub objects: Vec<DrmPrimeSurfaceDescriptorObject>,
+    pub layers: Vec<DrmPrimeSurfaceDescriptorLayer>,
 }
