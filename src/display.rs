@@ -266,7 +266,7 @@ impl Display {
             width,
             height,
             usage_hint,
-            num_surfaces,
+            &vec![(); num_surfaces],
         )
     }
 

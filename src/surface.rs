@@ -10,7 +10,20 @@ use crate::va_check;
 use crate::UsageHint;
 use crate::VaError;
 
-/// An owned VA surface that is tied to the lifetime of a particular VADisplay
+/// Trait describing a memory origin for surfaces.
+pub trait SurfaceMemoryDescriptor {
+    /// Add the required attributes to `attr` in order to attach the memory of this descriptor to
+    /// the surface when it is created.
+    fn add_attrs(&self, attrs: &mut Vec<bindings::VASurfaceAttrib>);
+}
+
+/// Used when we want the VA driver to allocate surface memory for us. In this case we don't need
+/// to add any specific attribute for surface creation.
+impl SurfaceMemoryDescriptor for () {
+    fn add_attrs(&self, _attrs: &mut Vec<bindings::VASurfaceAttrib>) {}
+}
+
+/// An owned VA surface that is tied to a particular `Display`.
 pub struct Surface {
     display: Rc<Display>,
     id: bindings::VASurfaceID,
@@ -21,14 +34,14 @@ pub struct Surface {
 impl Surface {
     /// Create `Surfaces` by wrapping around a `vaCreateSurfaces` call. This is just a helper for
     /// [`Display::create_surfaces`].
-    pub(crate) fn new(
+    pub(crate) fn new<D: SurfaceMemoryDescriptor>(
         display: Rc<Display>,
         rt_format: u32,
         va_fourcc: Option<u32>,
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        num_surfaces: usize,
+        descriptors: &[D],
     ) -> Result<Vec<Self>, VaError> {
         let mut attrs = vec![];
 
@@ -60,7 +73,11 @@ impl Surface {
             attrs.push(attr);
         }
 
-        let mut surfaces = Vec::with_capacity(num_surfaces);
+        for desc in descriptors.iter() {
+            desc.add_attrs(&mut attrs);
+        }
+
+        let mut surface_ids = Vec::with_capacity(descriptors.len());
 
         // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
         // properly initialized and valid sizes are passed to the C function, so it is impossible to
@@ -71,8 +88,8 @@ impl Surface {
                 rt_format,
                 width,
                 height,
-                surfaces.as_mut_ptr(),
-                num_surfaces as u32,
+                surface_ids.as_mut_ptr(),
+                descriptors.len() as u32,
                 attrs.as_mut_ptr(),
                 attrs.len() as u32,
             )
@@ -80,11 +97,11 @@ impl Surface {
 
         // Safe because the C function will have written to exactly `num_surfaces` entries, which is
         // known to be within the vector's capacity.
-        unsafe { surfaces.set_len(num_surfaces) };
+        unsafe { surface_ids.set_len(descriptors.len()) };
 
-        let va_surfaces = surfaces
-            .iter()
-            .map(|&id| Self {
+        let va_surfaces = surface_ids
+            .into_iter()
+            .map(|id| Self {
                 display: Rc::clone(&display),
                 id,
                 width,
