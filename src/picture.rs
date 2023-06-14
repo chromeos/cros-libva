@@ -12,6 +12,7 @@ use crate::display::Display;
 use crate::surface::Surface;
 use crate::va_check;
 use crate::Image;
+use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
 
 // Use the sealed trait pattern to make sure that new states are not created in caller code. More
@@ -74,7 +75,7 @@ pub trait PictureReclaimableSurface: PictureState + private::Sealed {}
 impl PictureReclaimableSurface for PictureNew {}
 impl PictureReclaimableSurface for PictureSync {}
 
-struct PictureInner {
+struct PictureInner<D: SurfaceMemoryDescriptor> {
     /// Timestamp of the picture.
     timestamp: u64,
     /// A context associated with this picture.
@@ -83,7 +84,7 @@ struct PictureInner {
     buffers: Vec<Buffer>,
     /// Contains the actual decoded data. Note that the surface may be shared in
     /// interlaced decoding.
-    surface: Rc<Surface>,
+    surface: Rc<Surface<D>>,
 }
 
 /// A `Surface` that is being rendered into.
@@ -92,15 +93,15 @@ struct PictureInner {
 /// `vaEndPicture` and `vaSyncSurface` in a type-safe way.
 ///
 /// The surface will have valid picture data after all the stages of decoding are called.
-pub struct Picture<S: PictureState> {
-    inner: Box<PictureInner>,
+pub struct Picture<S: PictureState, D: SurfaceMemoryDescriptor> {
+    inner: Box<PictureInner<D>>,
     phantom: std::marker::PhantomData<S>,
 }
 
-impl Picture<PictureNew> {
+impl<D: SurfaceMemoryDescriptor> Picture<PictureNew, D> {
     /// Creates a new Picture with a given `timestamp`. `surface` is the underlying surface that
     /// libva will render to.
-    pub fn new(timestamp: u64, context: Rc<Context>, surface: Surface) -> Self {
+    pub fn new(timestamp: u64, context: Rc<Context>, surface: Surface<D>) -> Self {
         Self {
             inner: Box::new(PictureInner {
                 timestamp,
@@ -118,8 +119,8 @@ impl Picture<PictureNew> {
     /// decoding as one can render both fields to the same underlying surface.
     pub fn new_from_same_surface<T: PictureReclaimableSurface, S: PictureReclaimableSurface>(
         timestamp: u64,
-        picture: &Picture<S>,
-    ) -> Picture<T> {
+        picture: &Picture<S, D>,
+    ) -> Picture<T, D> {
         let context = Rc::clone(&picture.inner.context);
         Picture {
             inner: Box::new(PictureInner {
@@ -139,7 +140,7 @@ impl Picture<PictureNew> {
     }
 
     /// Wrapper around `vaBeginPicture`.
-    pub fn begin(self) -> Result<Picture<PictureBegin>, VaError> {
+    pub fn begin(self) -> Result<Picture<PictureBegin, D>, VaError> {
         // Safe because `self.inner.context` represents a valid VAContext and
         // `self.inner.surface` represents a valid VASurface.
         let res = va_check(unsafe {
@@ -157,9 +158,9 @@ impl Picture<PictureNew> {
     }
 }
 
-impl Picture<PictureBegin> {
+impl<D: SurfaceMemoryDescriptor> Picture<PictureBegin, D> {
     /// Wrapper around `vaRenderPicture`.
-    pub fn render(self) -> Result<Picture<PictureRender>, VaError> {
+    pub fn render(self) -> Result<Picture<PictureRender, D>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext` and `self.inner.surface`
         // represents a valid `VASurface`. `buffers` point to a Rust struct and the vector length is
         // passed to the C function, so it is impossible to write past the end of the vector's
@@ -179,9 +180,9 @@ impl Picture<PictureBegin> {
     }
 }
 
-impl Picture<PictureRender> {
+impl<D: SurfaceMemoryDescriptor> Picture<PictureRender, D> {
     /// Wrapper around `vaEndPicture`.
-    pub fn end(self) -> Result<Picture<PictureEnd>, VaError> {
+    pub fn end(self) -> Result<Picture<PictureEnd, D>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext`.
         va_check(unsafe {
             bindings::vaEndPicture(
@@ -196,9 +197,9 @@ impl Picture<PictureRender> {
     }
 }
 
-impl Picture<PictureEnd> {
+impl<D: SurfaceMemoryDescriptor> Picture<PictureEnd, D> {
     /// Syncs the picture, ensuring that all pending operations are complete when this call returns.
-    pub fn sync(self) -> Result<Picture<PictureSync>, (VaError, Self)> {
+    pub fn sync(self) -> Result<Picture<PictureSync, D>, (VaError, Self)> {
         let res = self.inner.surface.sync();
 
         match res {
@@ -219,7 +220,7 @@ impl Picture<PictureEnd> {
     }
 }
 
-impl Picture<PictureSync> {
+impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
     /// Create a new derived image from this `Picture` using `vaDeriveImage`.
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
@@ -287,7 +288,7 @@ impl Picture<PictureSync> {
     }
 }
 
-impl<S: PictureState> Picture<S> {
+impl<S: PictureState, D: SurfaceMemoryDescriptor> Picture<S, D> {
     /// Returns the timestamp of this picture.
     pub fn timestamp(&self) -> u64 {
         self.inner.timestamp
@@ -309,13 +310,13 @@ impl<S: PictureState> Picture<S> {
     }
 }
 
-impl<S: PictureReclaimableSurface> Picture<S> {
+impl<S: PictureReclaimableSurface, D: SurfaceMemoryDescriptor> Picture<S, D> {
     /// Reclaim ownership of the Surface this picture has been created from, consuming the picture
     /// in the process. Useful if the Surface is part of a pool.
     ///
     /// This will fail and return the passed object if there are more than one reference to the
     /// underlying surface.
-    pub fn take_surface(self) -> Result<Surface, Self> {
+    pub fn take_surface(self) -> Result<Surface<D>, Self> {
         let inner = self.inner;
         match Rc::try_unwrap(inner.surface) {
             Ok(surface) => Ok(surface),
@@ -332,8 +333,8 @@ impl<S: PictureReclaimableSurface> Picture<S> {
     }
 }
 
-impl<S: PictureState> AsRef<Surface> for Picture<S> {
-    fn as_ref(&self) -> &Surface {
+impl<S: PictureState, D: SurfaceMemoryDescriptor> AsRef<Surface<D>> for Picture<S, D> {
+    fn as_ref(&self) -> &Surface<D> {
         &self.inner.surface
     }
 }

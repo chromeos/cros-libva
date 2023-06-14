@@ -17,6 +17,7 @@ use crate::config::Config;
 use crate::context::Context;
 use crate::surface::Surface;
 use crate::va_check;
+use crate::SurfaceMemoryDescriptor;
 use crate::UsageHint;
 use crate::VaError;
 
@@ -242,6 +243,8 @@ impl Display {
 
     /// Creates `Surface`s by wrapping around a `vaCreateSurfaces` call.
     ///
+    /// The number of surfaces created will be equal to the length of `descriptors`.
+    ///
     /// # Arguments
     ///
     /// * `rt_format` - The desired surface format. See `VA_RT_FORMAT_*`
@@ -250,15 +253,21 @@ impl Display {
     /// * `height` - Height for the created surfaces
     /// * `usage_hint` - Optional hint of intended usage to optimize allocation (e.g. tiling)
     /// * `num_surfaces` - Number of surfaces to create
-    pub fn create_surfaces(
+    /// * `descriptors` - Memory descriptors used as surface memory backing.
+    ///
+    /// # Return value
+    ///
+    /// Returns as many surfaces as the length of `descriptors`. In case of error, `descriptors` is
+    /// returned alongside the VA error code.
+    pub fn create_surfaces<D: SurfaceMemoryDescriptor>(
         self: &Rc<Self>,
         rt_format: u32,
         va_fourcc: Option<u32>,
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        num_surfaces: usize,
-    ) -> Result<Vec<Surface>, VaError> {
+        descriptors: Vec<D>,
+    ) -> Result<Vec<Surface<D>>, (VaError, Vec<D>)> {
         Surface::new(
             Rc::clone(self),
             rt_format,
@@ -266,7 +275,7 @@ impl Display {
             width,
             height,
             usage_hint,
-            &vec![(); num_surfaces],
+            descriptors,
         )
     }
 
@@ -279,12 +288,12 @@ impl Display {
     /// * `coded_height` - The coded picture height
     /// * `surfaces` - Optional hint for the amount of surfaces tied to the context
     /// * `progressive` - Whether only progressive frame pictures are present in the sequence
-    pub fn create_context(
+    pub fn create_context<D: SurfaceMemoryDescriptor>(
         self: &Rc<Self>,
         config: &Config,
         coded_width: u32,
         coded_height: u32,
-        surfaces: Option<&Vec<Surface>>,
+        surfaces: Option<&Vec<Surface<D>>>,
         progressive: bool,
     ) -> Result<Rc<Context>, VaError> {
         Context::new(

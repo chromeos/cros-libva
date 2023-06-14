@@ -9,6 +9,7 @@ use crate::picture::Picture;
 use crate::picture::PictureSync;
 use crate::va_check;
 use crate::Display;
+use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
 
 /// Wrapper around `VAImage` that is tied to the lifetime of a given `Picture`.
@@ -35,8 +36,8 @@ impl<'a> Image<'a> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    pub(crate) fn new(
-        picture: &'a Picture<PictureSync>,
+    pub(crate) fn new<D: SurfaceMemoryDescriptor>(
+        picture: &'a Picture<PictureSync, D>,
         image: bindings::VAImage,
         derived: bool,
         display_resolution: (u32, u32),

@@ -26,25 +26,26 @@ impl SurfaceMemoryDescriptor for () {
 }
 
 /// An owned VA surface that is tied to a particular `Display`.
-pub struct Surface {
+pub struct Surface<D: SurfaceMemoryDescriptor> {
     display: Rc<Display>,
     id: bindings::VASurfaceID,
+    descriptor: D,
     width: u32,
     height: u32,
 }
 
-impl Surface {
+impl<D: SurfaceMemoryDescriptor> Surface<D> {
     /// Create `Surfaces` by wrapping around a `vaCreateSurfaces` call. This is just a helper for
     /// [`Display::create_surfaces`].
-    pub(crate) fn new<D: SurfaceMemoryDescriptor>(
+    pub(crate) fn new(
         display: Rc<Display>,
         rt_format: u32,
         va_fourcc: Option<u32>,
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        descriptors: &[D],
-    ) -> Result<Vec<Self>, VaError> {
+        descriptors: Vec<D>,
+    ) -> Result<Vec<Self>, (VaError, Vec<D>)> {
         let mut attrs = vec![];
 
         if let Some(usage_hint) = usage_hint {
@@ -84,7 +85,7 @@ impl Surface {
         // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
         // properly initialized and valid sizes are passed to the C function, so it is impossible to
         // write past the end of their storage by mistake.
-        va_check(unsafe {
+        match va_check(unsafe {
             bindings::vaCreateSurfaces(
                 display.handle(),
                 rt_format,
@@ -95,23 +96,28 @@ impl Surface {
                 attrs.as_mut_ptr(),
                 attrs.len() as u32,
             )
-        })?;
+        }) {
+            Ok(()) => {
+                // Safe because the C function will have written to exactly `num_surfaces` entries, which is
+                // known to be within the vector's capacity.
+                unsafe { surface_ids.set_len(descriptors.len()) };
 
-        // Safe because the C function will have written to exactly `num_surfaces` entries, which is
-        // known to be within the vector's capacity.
-        unsafe { surface_ids.set_len(descriptors.len()) };
+                let va_surfaces = surface_ids
+                    .into_iter()
+                    .zip(descriptors)
+                    .map(|(id, descriptor)| Self {
+                        display: Rc::clone(&display),
+                        id,
+                        descriptor,
+                        width,
+                        height,
+                    })
+                    .collect();
 
-        let va_surfaces = surface_ids
-            .into_iter()
-            .map(|id| Self {
-                display: Rc::clone(&display),
-                id,
-                width,
-                height,
-            })
-            .collect();
-
-        Ok(va_surfaces)
+                Ok(va_surfaces)
+            }
+            Err(e) => Err((e, descriptors)),
+        }
     }
 
     /// Wrapper around `vaSyncSurface` that blocks until all pending operations on the render
@@ -213,7 +219,19 @@ impl Surface {
     }
 }
 
-impl Drop for Surface {
+impl<D: SurfaceMemoryDescriptor> AsRef<D> for Surface<D> {
+    fn as_ref(&self) -> &D {
+        &self.descriptor
+    }
+}
+
+impl<D: SurfaceMemoryDescriptor> AsMut<D> for Surface<D> {
+    fn as_mut(&mut self) -> &mut D {
+        &mut self.descriptor
+    }
+}
+
+impl<D: SurfaceMemoryDescriptor> Drop for Surface<D> {
     fn drop(&mut self) {
         // Safe because `self` represents a valid VASurface.
         unsafe { bindings::vaDestroySurfaces(self.display.handle(), &mut self.id, 1) };

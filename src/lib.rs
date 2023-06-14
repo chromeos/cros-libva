@@ -162,7 +162,7 @@ mod tests {
                 width,
                 height,
                 Some(UsageHint::USAGE_HINT_DECODER),
-                1,
+                vec![()],
             )
             .unwrap();
         let context = display

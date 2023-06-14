@@ -13,6 +13,7 @@ use crate::display::Display;
 use crate::va_check;
 use crate::Config;
 use crate::Surface;
+use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
 
 /// A VA context for a particular [`Display`].
@@ -24,12 +25,12 @@ pub struct Context {
 impl Context {
     /// Creates a Context by wrapping around a `vaCreateContext` call. This is just a helper for
     /// [`Display::create_context`].
-    pub(crate) fn new(
+    pub(crate) fn new<D: SurfaceMemoryDescriptor>(
         display: Rc<Display>,
         config: &Config,
         coded_width: u32,
         coded_height: u32,
-        surfaces: Option<&Vec<Surface>>,
+        surfaces: Option<&Vec<Surface<D>>>,
         progressive: bool,
     ) -> Result<Rc<Self>, VaError> {
         let mut context_id = 0;
