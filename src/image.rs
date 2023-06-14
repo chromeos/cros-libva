@@ -2,10 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+use std::rc::Rc;
+
 use crate::bindings;
 use crate::picture::Picture;
 use crate::picture::PictureSync;
 use crate::va_check;
+use crate::Display;
 use crate::VaError;
 
 /// Wrapper around `VAImage` that is tied to the lifetime of a given `Picture`.
@@ -13,8 +16,8 @@ use crate::VaError;
 /// An image is used to either get the surface data to client memory, or to copy image data in
 /// client memory to a surface.
 pub struct Image<'a> {
-    /// The picture whose `Surface` we use as the source of pixel data.
-    picture: &'a Picture<PictureSync>,
+    /// The display from which the image was created, so we can unmap it upon destruction.
+    display: Rc<Display>,
     /// The `VAImage` returned by libva.
     image: bindings::VAImage,
     /// The mapped surface data.
@@ -47,7 +50,7 @@ impl<'a> Image<'a> {
                 let data =
                     unsafe { std::slice::from_raw_parts_mut(addr as _, image.data_size as usize) };
                 Ok(Image {
-                    picture,
+                    display: Rc::clone(picture.display()),
                     image,
                     data,
                     derived,
@@ -88,9 +91,9 @@ impl<'a> Drop for Image<'a> {
         unsafe {
             // Safe since the buffer is mapped in `Image::new`, so `self.image.buf` points to a
             // valid `VABufferID`.
-            bindings::vaUnmapBuffer(self.picture.display().handle(), self.image.buf);
+            bindings::vaUnmapBuffer(self.display.handle(), self.image.buf);
             // Safe since `self.image` represents a valid `VAImage`.
-            bindings::vaDestroyImage(self.picture.display().handle(), self.image.image_id);
+            bindings::vaDestroyImage(self.display.handle(), self.image.image_id);
         }
     }
 }
