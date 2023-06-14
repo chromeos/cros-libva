@@ -227,7 +227,7 @@ impl Picture<PictureSync> {
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
     /// `Picture`. On the other hand, not all `Pictures` can be derived.
-    pub fn derive_image(&self) -> Result<Image, VaError> {
+    pub fn derive_image(&self, display_resolution: (u32, u32)) -> Result<Image, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
 
@@ -236,17 +236,17 @@ impl Picture<PictureSync> {
             bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
         })?;
 
-        Image::new(self, image, true)
+        Image::new(self, image, true, display_resolution)
     }
 
     /// Create new image from the `Picture` using `vaCreateImage` and `vaGetImage`.
     ///
-    /// The image will contain a copy of the `Picture` in the desired `format`, `width` and `height`.
+    /// The image will contain a copy of the `Picture` in the desired `format` and `coded_resolution`.
     pub fn create_image(
         &self,
         mut format: bindings::VAImageFormat,
-        width: u32,
-        height: u32,
+        coded_resolution: (u32, u32),
+        display_resolution: (u32, u32),
     ) -> Result<Image, VaError> {
         let dpy = self.display().handle();
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
@@ -254,7 +254,13 @@ impl Picture<PictureSync> {
 
         // Safe because `dpy` is a valid display handle.
         va_check(unsafe {
-            bindings::vaCreateImage(dpy, &mut format, width as i32, height as i32, &mut image)
+            bindings::vaCreateImage(
+                dpy,
+                &mut format,
+                coded_resolution.0 as i32,
+                coded_resolution.1 as i32,
+                &mut image,
+            )
         })?;
 
         // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
@@ -265,12 +271,13 @@ impl Picture<PictureSync> {
                 self.surface().id(),
                 0,
                 0,
-                width,
-                height,
+                coded_resolution.0,
+                coded_resolution.1,
                 image.image_id,
             )
         }) {
-            Ok(()) => Image::new(self, image, false),
+            Ok(()) => Image::new(self, image, false, display_resolution),
+
             Err(e) => {
                 // Safe because `image` is a valid `VAImage`.
                 unsafe {
