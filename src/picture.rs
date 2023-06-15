@@ -210,14 +210,6 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureEnd, D> {
             Err(e) => Err((e, self)),
         }
     }
-
-    /// Queries the status of the underlying surface.
-    ///
-    /// This call can be used to implement a non-blocking path, wherein a decoder queries the status
-    /// of the surface after each decode operation instead of blocking on it.
-    pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type, VaError> {
-        self.inner.surface.query_status()
-    }
 }
 
 impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
@@ -294,19 +286,15 @@ impl<S: PictureState, D: SurfaceMemoryDescriptor> Picture<S, D> {
         self.inner.timestamp
     }
 
-    /// Returns the ID of the underlying surface.
-    pub fn surface_id(&self) -> bindings::VASurfaceID {
-        self.inner.surface.id()
+    /// Returns the underlying surface. This is a convenience synonym for `as_ref`, to allow
+    /// callers to understand what they are returning.
+    pub fn surface(&self) -> &Surface<D> {
+        self.as_ref()
     }
 
     /// Returns a reference to the display owning this `Picture`.
     pub(crate) fn display(&self) -> &Rc<Display> {
         self.inner.context.display()
-    }
-
-    /// Returns the size of the surface being rendered to by this `Picture`.
-    pub fn surface_size(&self) -> (u32, u32) {
-        self.inner.surface.size()
     }
 }
 
