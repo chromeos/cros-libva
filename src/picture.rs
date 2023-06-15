@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -75,7 +76,8 @@ pub trait PictureReclaimableSurface: PictureState + private::Sealed {}
 impl PictureReclaimableSurface for PictureNew {}
 impl PictureReclaimableSurface for PictureSync {}
 
-struct PictureInner<D: SurfaceMemoryDescriptor> {
+/// Inner type for [`Picture`], that is, the part that exists in all states.
+struct PictureInner<T> {
     /// Timestamp of the picture.
     timestamp: u64,
     /// A context associated with this picture.
@@ -84,7 +86,7 @@ struct PictureInner<D: SurfaceMemoryDescriptor> {
     buffers: Vec<Buffer>,
     /// Contains the actual decoded data. Note that the surface may be shared in
     /// interlaced decoding.
-    surface: Rc<Surface<D>>,
+    surface: Rc<T>,
 }
 
 /// A `Surface` that is being rendered into.
@@ -93,15 +95,26 @@ struct PictureInner<D: SurfaceMemoryDescriptor> {
 /// `vaEndPicture` and `vaSyncSurface` in a type-safe way.
 ///
 /// The surface will have valid picture data after all the stages of decoding are called.
-pub struct Picture<S: PictureState, D: SurfaceMemoryDescriptor> {
-    inner: Box<PictureInner<D>>,
+///
+/// The `T` generic parameter must be `Borrow<Surface<_>>`, i.e. it can be [`Surface`] directly or
+/// some other type that contains one.
+///
+/// No constraint on `T` is specified in this declaration because specifying it here would force us
+/// to add the generic argument of [`Surface`] to this type as well, turning it into a type with 3
+/// generics, one of which is redundant. To avoid that we leave `T` unconstrained and instead
+/// constrain the methods that require to act on it as a [`Surface`].
+pub struct Picture<S: PictureState, T> {
+    inner: Box<PictureInner<T>>,
     phantom: std::marker::PhantomData<S>,
 }
 
-impl<D: SurfaceMemoryDescriptor> Picture<PictureNew, D> {
+impl<T> Picture<PictureNew, T> {
     /// Creates a new Picture with a given `timestamp`. `surface` is the underlying surface that
     /// libva will render to.
-    pub fn new(timestamp: u64, context: Rc<Context>, surface: Surface<D>) -> Self {
+    pub fn new<D: SurfaceMemoryDescriptor>(timestamp: u64, context: Rc<Context>, surface: T) -> Self
+    where
+        T: Borrow<Surface<D>>,
+    {
         Self {
             inner: Box::new(PictureInner {
                 timestamp,
@@ -119,7 +132,7 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureNew, D> {
     /// decoding as one can render both fields to the same underlying surface.
     pub fn new_from_same_surface<S: PictureReclaimableSurface>(
         timestamp: u64,
-        picture: &Picture<S, D>,
+        picture: &Picture<S, T>,
     ) -> Self {
         let context = Rc::clone(&picture.inner.context);
         Picture {
@@ -140,14 +153,17 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureNew, D> {
     }
 
     /// Wrapper around `vaBeginPicture`.
-    pub fn begin(self) -> Result<Picture<PictureBegin, D>, VaError> {
+    pub fn begin<D: SurfaceMemoryDescriptor>(self) -> Result<Picture<PictureBegin, T>, VaError>
+    where
+        T: Borrow<Surface<D>>,
+    {
         // Safe because `self.inner.context` represents a valid VAContext and
         // `self.inner.surface` represents a valid VASurface.
         let res = va_check(unsafe {
             bindings::vaBeginPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
-                self.inner.surface.id(),
+                self.surface().id(),
             )
         });
 
@@ -158,9 +174,9 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureNew, D> {
     }
 }
 
-impl<D: SurfaceMemoryDescriptor> Picture<PictureBegin, D> {
+impl<T> Picture<PictureBegin, T> {
     /// Wrapper around `vaRenderPicture`.
-    pub fn render(self) -> Result<Picture<PictureRender, D>, VaError> {
+    pub fn render(self) -> Result<Picture<PictureRender, T>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext` and `self.inner.surface`
         // represents a valid `VASurface`. `buffers` point to a Rust struct and the vector length is
         // passed to the C function, so it is impossible to write past the end of the vector's
@@ -180,9 +196,9 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureBegin, D> {
     }
 }
 
-impl<D: SurfaceMemoryDescriptor> Picture<PictureRender, D> {
+impl<T> Picture<PictureRender, T> {
     /// Wrapper around `vaEndPicture`.
-    pub fn end(self) -> Result<Picture<PictureEnd, D>, VaError> {
+    pub fn end(self) -> Result<Picture<PictureEnd, T>, VaError> {
         // Safe because `self.inner.context` represents a valid `VAContext`.
         va_check(unsafe {
             bindings::vaEndPicture(
@@ -197,10 +213,15 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureRender, D> {
     }
 }
 
-impl<D: SurfaceMemoryDescriptor> Picture<PictureEnd, D> {
+impl<T> Picture<PictureEnd, T> {
     /// Syncs the picture, ensuring that all pending operations are complete when this call returns.
-    pub fn sync(self) -> Result<Picture<PictureSync, D>, (VaError, Self)> {
-        let res = self.inner.surface.sync();
+    pub fn sync<D: SurfaceMemoryDescriptor>(
+        self,
+    ) -> Result<Picture<PictureSync, T>, (VaError, Self)>
+    where
+        T: Borrow<Surface<D>>,
+    {
+        let res = self.surface().sync();
 
         match res {
             Ok(()) => Ok(Picture {
@@ -212,18 +233,24 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureEnd, D> {
     }
 }
 
-impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
+impl<T> Picture<PictureSync, T> {
     /// Create a new derived image from this `Picture` using `vaDeriveImage`.
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
     /// `Picture`. On the other hand, not all `Pictures` can be derived.
-    pub fn derive_image(&self, display_resolution: (u32, u32)) -> Result<Image, VaError> {
+    pub fn derive_image<D: SurfaceMemoryDescriptor>(
+        &self,
+        display_resolution: (u32, u32),
+    ) -> Result<Image, VaError>
+    where
+        T: Borrow<Surface<D>>,
+    {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
 
         // Safe because `self` has a valid display handle and ID.
         va_check(unsafe {
-            bindings::vaDeriveImage(self.display().handle(), self.inner.surface.id(), &mut image)
+            bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
         })?;
 
         Image::new(self, image, true, display_resolution)
@@ -232,12 +259,15 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
     /// Create new image from the `Picture` using `vaCreateImage` and `vaGetImage`.
     ///
     /// The image will contain a copy of the `Picture` in the desired `format` and `coded_resolution`.
-    pub fn create_image(
+    pub fn create_image<D: SurfaceMemoryDescriptor>(
         &self,
         mut format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
         display_resolution: (u32, u32),
-    ) -> Result<Image, VaError> {
+    ) -> Result<Image, VaError>
+    where
+        T: Borrow<Surface<D>>,
+    {
         let dpy = self.display().handle();
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
@@ -258,7 +288,7 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
         match va_check(unsafe {
             bindings::vaGetImage(
                 dpy,
-                self.inner.surface.id(),
+                self.surface().id(),
                 0,
                 0,
                 coded_resolution.0,
@@ -280,16 +310,22 @@ impl<D: SurfaceMemoryDescriptor> Picture<PictureSync, D> {
     }
 }
 
-impl<S: PictureState, D: SurfaceMemoryDescriptor> Picture<S, D> {
+impl<S: PictureState, T> Picture<S, T> {
     /// Returns the timestamp of this picture.
     pub fn timestamp(&self) -> u64 {
         self.inner.timestamp
     }
 
-    /// Returns the underlying surface. This is a convenience synonym for `as_ref`, to allow
-    /// callers to understand what they are returning.
-    pub fn surface(&self) -> &Surface<D> {
-        self.as_ref()
+    /// Returns a reference to the underlying `Surface`.
+    ///
+    /// If you are interested in obtaining the container of the `Surface`, use `as_ref()` instead.
+    /// This is a convenience method to avoid having to call `borrow()` every time the surface is
+    /// needed.
+    pub fn surface<D: SurfaceMemoryDescriptor>(&self) -> &Surface<D>
+    where
+        T: Borrow<Surface<D>>,
+    {
+        self.as_ref().borrow()
     }
 
     /// Returns a reference to the display owning this `Picture`.
@@ -298,13 +334,13 @@ impl<S: PictureState, D: SurfaceMemoryDescriptor> Picture<S, D> {
     }
 }
 
-impl<S: PictureReclaimableSurface, D: SurfaceMemoryDescriptor> Picture<S, D> {
+impl<S: PictureReclaimableSurface, T> Picture<S, T> {
     /// Reclaim ownership of the Surface this picture has been created from, consuming the picture
     /// in the process. Useful if the Surface is part of a pool.
     ///
     /// This will fail and return the passed object if there are more than one reference to the
     /// underlying surface.
-    pub fn take_surface(self) -> Result<Surface<D>, Self> {
+    pub fn take_surface(self) -> Result<T, Self> {
         let inner = self.inner;
         match Rc::try_unwrap(inner.surface) {
             Ok(surface) => Ok(surface),
@@ -321,8 +357,8 @@ impl<S: PictureReclaimableSurface, D: SurfaceMemoryDescriptor> Picture<S, D> {
     }
 }
 
-impl<S: PictureState, D: SurfaceMemoryDescriptor> AsRef<Surface<D>> for Picture<S, D> {
-    fn as_ref(&self) -> &Surface<D> {
-        &self.inner.surface
+impl<S: PictureState, T> AsRef<T> for Picture<S, T> {
+    fn as_ref(&self) -> &T {
+        (*self.inner.surface).borrow()
     }
 }

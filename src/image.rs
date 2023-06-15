@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+use std::borrow::Borrow;
 use std::rc::Rc;
 
 use crate::bindings;
@@ -9,6 +10,7 @@ use crate::picture::Picture;
 use crate::picture::PictureSync;
 use crate::va_check;
 use crate::Display;
+use crate::Surface;
 use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
 
@@ -36,8 +38,8 @@ impl<'a> Image<'a> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    pub(crate) fn new<D: SurfaceMemoryDescriptor>(
-        picture: &'a Picture<PictureSync, D>,
+    pub(crate) fn new<D: SurfaceMemoryDescriptor, T: Borrow<Surface<D>>>(
+        picture: &'a Picture<PictureSync, T>,
         image: bindings::VAImage,
         derived: bool,
         display_resolution: (u32, u32),
