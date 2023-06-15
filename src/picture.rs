@@ -2,9 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::cell::Ref;
-use std::cell::RefCell;
-use std::cell::RefMut;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -86,7 +83,7 @@ struct PictureInner {
     buffers: Vec<Buffer>,
     /// Contains the actual decoded data. Note that the surface may be shared in
     /// interlaced decoding.
-    surface: Rc<RefCell<Surface>>,
+    surface: Rc<Surface>,
 }
 
 /// A `Surface` that is being rendered into.
@@ -109,7 +106,7 @@ impl Picture<PictureNew> {
                 timestamp,
                 context,
                 buffers: Default::default(),
-                surface: Rc::new(RefCell::new(surface)),
+                surface: Rc::new(surface),
             }),
 
             phantom: PhantomData,
@@ -149,7 +146,7 @@ impl Picture<PictureNew> {
             bindings::vaBeginPicture(
                 self.inner.context.display().handle(),
                 self.inner.context.id(),
-                self.inner.surface.borrow().id(),
+                self.inner.surface.id(),
             )
         });
 
@@ -202,7 +199,7 @@ impl Picture<PictureRender> {
 impl Picture<PictureEnd> {
     /// Syncs the picture, ensuring that all pending operations are complete when this call returns.
     pub fn sync(self) -> Result<Picture<PictureSync>, (VaError, Self)> {
-        let res = self.inner.surface.borrow().sync();
+        let res = self.inner.surface.sync();
 
         match res {
             Ok(()) => Ok(Picture {
@@ -218,7 +215,7 @@ impl Picture<PictureEnd> {
     /// This call can be used to implement a non-blocking path, wherein a decoder queries the status
     /// of the surface after each decode operation instead of blocking on it.
     pub fn query_status(&self) -> Result<bindings::VASurfaceStatus::Type, VaError> {
-        self.inner.surface.borrow_mut().query_status()
+        self.inner.surface.query_status()
     }
 }
 
@@ -233,7 +230,7 @@ impl Picture<PictureSync> {
 
         // Safe because `self` has a valid display handle and ID.
         va_check(unsafe {
-            bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
+            bindings::vaDeriveImage(self.display().handle(), self.inner.surface.id(), &mut image)
         })?;
 
         Image::new(self, image, true, display_resolution)
@@ -268,7 +265,7 @@ impl Picture<PictureSync> {
         match va_check(unsafe {
             bindings::vaGetImage(
                 dpy,
-                self.surface().id(),
+                self.inner.surface.id(),
                 0,
                 0,
                 coded_resolution.0,
@@ -298,7 +295,7 @@ impl<S: PictureState> Picture<S> {
 
     /// Returns the ID of the underlying surface.
     pub fn surface_id(&self) -> bindings::VASurfaceID {
-        self.inner.surface.borrow().id()
+        self.inner.surface.id()
     }
 
     /// Returns a reference to the display owning this `Picture`.
@@ -308,7 +305,7 @@ impl<S: PictureState> Picture<S> {
 
     /// Returns the size of the surface being rendered to by this `Picture`.
     pub fn surface_size(&self) -> (u32, u32) {
-        self.inner.surface.borrow().size()
+        self.inner.surface.size()
     }
 }
 
@@ -321,7 +318,7 @@ impl<S: PictureReclaimableSurface> Picture<S> {
     pub fn take_surface(self) -> Result<Surface, Self> {
         let inner = self.inner;
         match Rc::try_unwrap(inner.surface) {
-            Ok(surface) => Ok(surface.into_inner()),
+            Ok(surface) => Ok(surface),
             Err(surface) => Err(Self {
                 inner: Box::new(PictureInner {
                     surface,
@@ -333,14 +330,10 @@ impl<S: PictureReclaimableSurface> Picture<S> {
             }),
         }
     }
+}
 
-    /// Returns a reference to the underlying `Surface` for this `Picture`
-    pub fn surface(&self) -> Ref<Surface> {
-        self.inner.surface.borrow()
-    }
-
-    /// Returns a mutable reference to the underlying `Surface` for this `Picture`
-    pub fn surface_mut(&mut self) -> RefMut<Surface> {
-        self.inner.surface.borrow_mut()
+impl<S: PictureState> AsRef<Surface> for Picture<S> {
+    fn as_ref(&self) -> &Surface {
+        &self.inner.surface
     }
 }
