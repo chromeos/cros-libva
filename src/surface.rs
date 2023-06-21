@@ -8,10 +8,20 @@ use std::os::raw::c_void;
 use std::rc::Rc;
 
 use crate::bindings;
+use crate::bindings::VASurfaceAttribExternalBuffers;
 use crate::display::Display;
 use crate::va_check;
 use crate::UsageHint;
 use crate::VaError;
+
+/// VA memory types, aka `VA_SURFACE_ATTRIB_MEM_TYPE_*`.
+#[repr(u32)]
+pub enum MemoryType {
+    Va = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_VA,
+    V4L2 = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_V4L2,
+    UserPtr = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_USER_PTR,
+    DrmPrime2 = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+}
 
 /// Trait describing a memory backing for surfaces.
 ///
@@ -55,6 +65,43 @@ impl SurfaceMemoryDescriptor for () {
         _: &mut Vec<bindings::VASurfaceAttrib>,
         _: &mut Self::DescriptorAttribute,
     ) {
+    }
+}
+
+/// Trait for providers of user-space memory that can be used as a decoding target.
+///
+/// Implementors of this trait will be attached with the `VA_SURFACE_ATTRIB_MEM_TYPE_USER_PTR`
+/// memory type.
+pub trait UserPtrSurfaceMemoryDescriptor {
+    /// Returns the `VASurfaceAttribExternalBuffers` instance allowing this memory to be imported
+    /// into VAAPI.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `self` remains valid and does not move until the returned
+    /// descriptor has been used, as it may mention resources owned by `self`.
+    unsafe fn va_surface_attrib(&mut self) -> VASurfaceAttribExternalBuffers;
+}
+
+impl<T> SurfaceMemoryDescriptor for T
+where
+    T: UserPtrSurfaceMemoryDescriptor,
+{
+    type DescriptorAttribute = VASurfaceAttribExternalBuffers;
+
+    unsafe fn build_descriptor(&mut self) -> Self::DescriptorAttribute {
+        self.va_surface_attrib()
+    }
+
+    fn add_attrs(
+        &mut self,
+        attrs: &mut Vec<bindings::VASurfaceAttrib>,
+        desc: &mut Self::DescriptorAttribute,
+    ) {
+        attrs.push(bindings::VASurfaceAttrib::new_memory_type(
+            MemoryType::UserPtr,
+        ));
+        attrs.push(bindings::VASurfaceAttrib::new_buffer_descriptor(desc));
     }
 }
 
@@ -109,6 +156,22 @@ impl bindings::VASurfaceAttrib {
             type_: bindings::VASurfaceAttribType::VASurfaceAttribUsageHint,
             flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
             value: bindings::VAGenericValue::from(usage_hint.bits() as i32),
+        }
+    }
+
+    pub fn new_memory_type(mem_type: MemoryType) -> Self {
+        Self {
+            type_: bindings::VASurfaceAttribType::VASurfaceAttribMemoryType,
+            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            value: bindings::VAGenericValue::from(mem_type as i32),
+        }
+    }
+
+    pub fn new_buffer_descriptor(desc: &mut VASurfaceAttribExternalBuffers) -> Self {
+        Self {
+            type_: bindings::VASurfaceAttribType::VASurfaceAttribExternalBufferDescriptor,
+            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            value: bindings::VAGenericValue::from(desc as *mut _ as *mut c_void),
         }
     }
 }
