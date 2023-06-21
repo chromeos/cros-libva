@@ -13,17 +13,49 @@ use crate::va_check;
 use crate::UsageHint;
 use crate::VaError;
 
-/// Trait describing a memory origin for surfaces.
+/// Trait describing a memory backing for surfaces.
+///
+/// Using external memory for backing a VA surface is done in two steps:
+///
+/// 1. Build the descriptor specific to the memory type we want to use,
+/// 2. Mention this descriptor as an attribute to be passed to `vaDeriveImage`.
+///
+/// Since descriptor types will typically contain raw pointers or other resources which lifetime we
+/// cannot track, `build_descriptor` is marked unsafe.
 pub trait SurfaceMemoryDescriptor {
+    /// The attribute type to be passed to `vaDeriveImage`.
+    type DescriptorAttribute;
+
+    /// Build the descriptor attribute for the surface.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `self` remains valid and does not move until `vaCreateSurfaces`
+    /// as returned.
+    unsafe fn build_descriptor(&mut self) -> Self::DescriptorAttribute;
+
     /// Add the required attributes to `attr` in order to attach the memory of this descriptor to
     /// the surface when it is created.
-    fn add_attrs(&self, attrs: &mut Vec<bindings::VASurfaceAttrib>);
+    fn add_attrs(
+        &mut self,
+        attrs: &mut Vec<bindings::VASurfaceAttrib>,
+        desc: &mut Self::DescriptorAttribute,
+    );
 }
 
 /// Used when we want the VA driver to allocate surface memory for us. In this case we don't need
 /// to add any specific attribute for surface creation.
 impl SurfaceMemoryDescriptor for () {
-    fn add_attrs(&self, _attrs: &mut Vec<bindings::VASurfaceAttrib>) {}
+    type DescriptorAttribute = ();
+
+    unsafe fn build_descriptor(&mut self) -> Self::DescriptorAttribute {}
+
+    fn add_attrs(
+        &mut self,
+        _: &mut Vec<bindings::VASurfaceAttrib>,
+        _: &mut Self::DescriptorAttribute,
+    ) {
+    }
 }
 
 /// An owned VA surface that is tied to a particular `Display`.
@@ -91,9 +123,10 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        descriptors: Vec<D>,
+        mut descriptors: Vec<D>,
     ) -> Result<Vec<Self>, (VaError, Vec<D>)> {
         let mut attrs = vec![];
+        let mut descs = vec![];
 
         if let Some(usage_hint) = usage_hint {
             attrs.push(bindings::VASurfaceAttrib::new_usage_hint(usage_hint));
@@ -103,8 +136,11 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
             attrs.push(bindings::VASurfaceAttrib::new_pixel_format(fourcc));
         }
 
-        for desc in descriptors.iter() {
-            desc.add_attrs(&mut attrs);
+        for desc in descriptors.iter_mut() {
+            // Safe because the boxed descriptor will not move until `vaCreateSurfaces` returns.
+            let mut boxed_desc = Box::new(unsafe { desc.build_descriptor() });
+            desc.add_attrs(&mut attrs, boxed_desc.as_mut());
+            descs.push(boxed_desc);
         }
 
         let mut surface_ids = Vec::with_capacity(descriptors.len());
