@@ -4,6 +4,7 @@
 
 use std::os::fd::FromRawFd;
 use std::os::fd::OwnedFd;
+use std::os::raw::c_void;
 use std::rc::Rc;
 
 use crate::bindings;
@@ -34,6 +35,52 @@ pub struct Surface<D: SurfaceMemoryDescriptor> {
     height: u32,
 }
 
+impl From<i32> for bindings::VAGenericValue {
+    fn from(i: i32) -> Self {
+        Self {
+            type_: bindings::VAGenericValueType::VAGenericValueTypeInteger,
+            value: bindings::_VAGenericValue__bindgen_ty_1 { i },
+        }
+    }
+}
+
+impl From<f32> for bindings::VAGenericValue {
+    fn from(f: f32) -> Self {
+        Self {
+            type_: bindings::VAGenericValueType::VAGenericValueTypeFloat,
+            value: bindings::_VAGenericValue__bindgen_ty_1 { f },
+        }
+    }
+}
+
+impl From<*mut c_void> for bindings::VAGenericValue {
+    fn from(p: *mut c_void) -> Self {
+        Self {
+            type_: bindings::VAGenericValueType::VAGenericValueTypePointer,
+            value: bindings::_VAGenericValue__bindgen_ty_1 { p },
+        }
+    }
+}
+
+/// Helpers to build valid `VASurfaceAttrib`s.
+impl bindings::VASurfaceAttrib {
+    pub fn new_pixel_format(fourcc: u32) -> Self {
+        Self {
+            type_: bindings::VASurfaceAttribType::VASurfaceAttribPixelFormat,
+            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            value: bindings::VAGenericValue::from(fourcc as i32),
+        }
+    }
+
+    pub fn new_usage_hint(usage_hint: UsageHint) -> Self {
+        Self {
+            type_: bindings::VASurfaceAttribType::VASurfaceAttribUsageHint,
+            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            value: bindings::VAGenericValue::from(usage_hint.bits() as i32),
+        }
+    }
+}
+
 impl<D: SurfaceMemoryDescriptor> Surface<D> {
     /// Create `Surfaces` by wrapping around a `vaCreateSurfaces` call. This is just a helper for
     /// [`Display::create_surfaces`].
@@ -49,31 +96,11 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         let mut attrs = vec![];
 
         if let Some(usage_hint) = usage_hint {
-            let attr = bindings::VASurfaceAttrib {
-                type_: bindings::VASurfaceAttribType::VASurfaceAttribUsageHint,
-                flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
-                value: bindings::VAGenericValue {
-                    type_: bindings::VAGenericValueType::VAGenericValueTypeInteger,
-                    value: bindings::_VAGenericValue__bindgen_ty_1 {
-                        i: usage_hint.bits() as i32,
-                    },
-                },
-            };
-
-            attrs.push(attr);
+            attrs.push(bindings::VASurfaceAttrib::new_usage_hint(usage_hint));
         }
 
         if let Some(fourcc) = va_fourcc {
-            let attr = bindings::VASurfaceAttrib {
-                type_: bindings::VASurfaceAttribType::VASurfaceAttribPixelFormat,
-                flags: bindings::constants::VA_DISPLAY_ATTRIB_SETTABLE,
-                value: bindings::VAGenericValue {
-                    type_: bindings::VAGenericValueType::VAGenericValueTypeInteger,
-                    value: bindings::_VAGenericValue__bindgen_ty_1 { i: fourcc as i32 },
-                },
-            };
-
-            attrs.push(attr);
+            attrs.push(bindings::VASurfaceAttrib::new_pixel_format(fourcc));
         }
 
         for desc in descriptors.iter() {
@@ -168,7 +195,7 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
                 bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
                 bindings::constants::VA_EXPORT_SURFACE_READ_ONLY
                     | bindings::constants::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
-                &mut desc as *mut _ as *mut std::os::raw::c_void,
+                &mut desc as *mut _ as *mut c_void,
             )
         })?;
 
