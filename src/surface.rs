@@ -12,6 +12,7 @@ use crate::bindings::VASurfaceAttribExternalBuffers;
 use crate::display::Display;
 use crate::va_check;
 use crate::UsageHint;
+use crate::VASurfaceID;
 use crate::VaError;
 
 /// VA memory types, aka `VA_SURFACE_ATTRIB_MEM_TYPE_*`.
@@ -186,64 +187,54 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         width: u32,
         height: u32,
         usage_hint: Option<UsageHint>,
-        mut descriptors: Vec<D>,
-    ) -> Result<Vec<Self>, (VaError, Vec<D>)> {
-        let mut attrs = vec![];
-        let mut descs = vec![];
+        descriptors: Vec<D>,
+    ) -> Result<Vec<Self>, VaError> {
+        let mut surfaces = vec![];
 
-        if let Some(usage_hint) = usage_hint {
-            attrs.push(bindings::VASurfaceAttrib::new_usage_hint(usage_hint));
-        }
+        for mut descriptor in descriptors {
+            let mut attrs = vec![];
 
-        if let Some(fourcc) = va_fourcc {
-            attrs.push(bindings::VASurfaceAttrib::new_pixel_format(fourcc));
-        }
-
-        for desc in descriptors.iter_mut() {
-            // Safe because the boxed descriptor will not move until `vaCreateSurfaces` returns.
-            let mut boxed_desc = Box::new(unsafe { desc.build_descriptor() });
-            desc.add_attrs(&mut attrs, boxed_desc.as_mut());
-            descs.push(boxed_desc);
-        }
-
-        let mut surface_ids = Vec::with_capacity(descriptors.len());
-
-        // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
-        // properly initialized and valid sizes are passed to the C function, so it is impossible to
-        // write past the end of their storage by mistake.
-        match va_check(unsafe {
-            bindings::vaCreateSurfaces(
-                display.handle(),
-                rt_format,
-                width,
-                height,
-                surface_ids.as_mut_ptr(),
-                descriptors.len() as u32,
-                attrs.as_mut_ptr(),
-                attrs.len() as u32,
-            )
-        }) {
-            Ok(()) => {
-                // Safe because the C function will have written to exactly `num_surfaces` entries, which is
-                // known to be within the vector's capacity.
-                unsafe { surface_ids.set_len(descriptors.len()) };
-
-                let va_surfaces = surface_ids
-                    .into_iter()
-                    .zip(descriptors)
-                    .map(|(id, descriptor)| Self {
-                        display: Rc::clone(&display),
-                        id,
-                        descriptor,
-                        width,
-                        height,
-                    })
-                    .collect();
-
-                Ok(va_surfaces)
+            if let Some(usage_hint) = usage_hint {
+                attrs.push(bindings::VASurfaceAttrib::new_usage_hint(usage_hint));
             }
-            Err(e) => Err((e, descriptors)),
+
+            if let Some(fourcc) = va_fourcc {
+                attrs.push(bindings::VASurfaceAttrib::new_pixel_format(fourcc));
+            }
+
+            // Safe because the returned descriptor will not move until `vaCreateSurfaces` returns.
+            let mut va_desc = Box::new(unsafe { descriptor.build_descriptor() });
+            descriptor.add_attrs(&mut attrs, &mut va_desc);
+
+            let mut surface_id: VASurfaceID = 0;
+
+            // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are
+            // properly initialized and valid sizes are passed to the C function, so it is impossible to
+            // write past the end of their storage by mistake.
+            match va_check(unsafe {
+                bindings::vaCreateSurfaces(
+                    display.handle(),
+                    rt_format,
+                    width,
+                    height,
+                    &mut surface_id,
+                    1,
+                    attrs.as_mut_ptr(),
+                    attrs.len() as u32,
+                )
+            }) {
+                Ok(()) => surfaces.push(Self {
+                    display: Rc::clone(&display),
+                    id: surface_id,
+                    descriptor,
+                    width,
+                    height,
+                }),
+                Err(e) => return Err(e),
+            }
         }
+
+        Ok(surfaces)
     }
 
     /// Wrapper around `vaSyncSurface` that blocks until all pending operations on the render

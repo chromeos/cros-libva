@@ -257,8 +257,11 @@ impl Display {
     ///
     /// # Return value
     ///
-    /// Returns as many surfaces as the length of `descriptors`. In case of error, `descriptors` is
-    /// returned alongside the VA error code.
+    /// Returns as many surfaces as the length of `descriptors`.
+    ///
+    /// Note that the `descriptors`'s ownership is irrevocably given to the surfaces, and that in
+    /// case of error the `descriptors` will be destroyed. Make sure to duplicate the descriptors
+    /// if you need something outside of libva to access them.
     pub fn create_surfaces<D: SurfaceMemoryDescriptor>(
         self: &Rc<Self>,
         rt_format: u32,
@@ -267,7 +270,7 @@ impl Display {
         height: u32,
         usage_hint: Option<UsageHint>,
         descriptors: Vec<D>,
-    ) -> Result<Vec<Surface<D>>, (VaError, Vec<D>)> {
+    ) -> Result<Vec<Surface<D>>, VaError> {
         Surface::new(
             Rc::clone(self),
             rt_format,
