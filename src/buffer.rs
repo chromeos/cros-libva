@@ -5,11 +5,13 @@
 //! Wrappers and helpers around `VABuffer`s.
 
 mod h264;
+mod hevc;
 mod mpeg2;
 mod vp8;
 mod vp9;
 
 pub use h264::*;
+pub use hevc::*;
 pub use mpeg2::*;
 pub use vp8::*;
 pub use vp9::*;
@@ -53,6 +55,18 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                PictureParameter::HEVC(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                PictureParameter::HEVCRext(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                PictureParameter::HEVCScc(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::SliceParameter(ref mut slice_param) => match slice_param {
@@ -72,6 +86,14 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                SliceParameter::HEVC(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                SliceParameter::HEVCRext(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::IQMatrix(ref mut iq_matrix) => match iq_matrix {
@@ -84,6 +106,10 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
                 IQMatrix::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                IQMatrix::HEVC(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -178,6 +204,12 @@ pub enum PictureParameter {
     VP9(vp9::PictureParameterBufferVP9),
     /// Wrapper over VAPictureParameterBufferH264.
     H264(h264::PictureParameterBufferH264),
+    /// Wrapper over VAPictureParameterBufferHEVC
+    HEVC(hevc::PictureParameterBufferHEVC),
+    /// Wrapper over VAPictureParameterBufferHEVCRext
+    HEVCRext(hevc::PictureParameterBufferHEVCRext),
+    /// Wrapper over VAPictureParameterBufferHEVCScc
+    HEVCScc(hevc::PictureParameterBufferHEVCScc),
 }
 
 /// Abstraction over the `SliceParameterBuffer` types we support
@@ -190,6 +222,10 @@ pub enum SliceParameter {
     VP9(vp9::SliceParameterBufferVP9),
     /// Wrapper over VASliceParameterBufferH264
     H264(h264::SliceParameterBufferH264),
+    /// Wrapper over VASliceParameterBufferHEVC
+    HEVC(hevc::SliceParameterBufferHEVC),
+    /// Wrapper over VASliceParameterBufferHEVCRext
+    HEVCRext(hevc::SliceParameterBufferHEVCRext),
 }
 
 /// Abstraction over the `IQMatrixBuffer` types we support.
@@ -200,4 +236,6 @@ pub enum IQMatrix {
     VP8(vp8::IQMatrixBufferVP8),
     /// Abstraction over `VAIQMatrixBufferH264`
     H264(h264::IQMatrixBufferH264),
+    /// Abstraction over `VAIQMatrixBufferHEVC`
+    HEVC(hevc::IQMatrixBufferHEVC),
 }
