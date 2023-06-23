@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+use std::any::Any;
 use std::os::fd::FromRawFd;
 use std::os::fd::OwnedFd;
 use std::os::raw::c_void;
@@ -14,37 +15,24 @@ use crate::UsageHint;
 use crate::VASurfaceID;
 use crate::VaError;
 
-/// Sealed trait pattern to avoid reimplementation of our local traits.
-mod private {
-    pub trait Sealed {}
-}
-
 /// Trait describing a memory backing for surfaces.
 ///
 /// Using external memory for backing a VA surface is done in two steps:
 ///
 /// 1. Build the descriptor specific to the memory type we want to use,
 /// 2. Mention this descriptor as an attribute to be passed to `vaDeriveImage`.
-pub trait SurfaceMemoryDescriptor: private::Sealed {
-    /// The attribute type to be passed to `vaDeriveImage`.
-    type DescriptorAttribute;
-
-    /// Build the descriptor attribute for the surface.
-    fn build_descriptor(&mut self) -> Self::DescriptorAttribute;
-
+///
+/// This trait allows to do that in a as-safe-as-possible way, by adding the required attributes
+/// and returning a heap-allocated object containing the data pointed to by the attributes. That
+/// way, the caller can keep that object alive until `vaCreateSurfaces` has returned.
+pub trait SurfaceMemoryDescriptor {
     /// Add the required attributes to `attr` in order to attach the memory of this descriptor to
     /// the surface when it is created.
-    fn add_attrs(
-        &mut self,
-        attrs: &mut Vec<bindings::VASurfaceAttrib>,
-        desc: &mut Self::DescriptorAttribute,
-    );
+    ///
+    /// The returned object, if any, is the descriptor pointed to by the attributes. The caller
+    /// must keep it around and unmoved until `vaCreateSurfaces` has returned.
+    fn add_attrs(&mut self, attrs: &mut Vec<bindings::VASurfaceAttrib>) -> Option<Box<dyn Any>>;
 }
-
-/// Trait for types that can be used as a `VASurfaceAttribExternalBufferDescriptor`.
-pub trait SurfaceExternalDescriptor: private::Sealed {}
-impl private::Sealed for bindings::VASurfaceAttribExternalBuffers {}
-impl SurfaceExternalDescriptor for bindings::VASurfaceAttribExternalBuffers {}
 
 /// VA memory types, aka `VA_SURFACE_ATTRIB_MEM_TYPE_*`.
 #[repr(u32)]
@@ -57,19 +45,23 @@ pub enum MemoryType {
 
 /// Used when we want the VA driver to allocate surface memory for us. In this case we don't need
 /// to add any specific attribute for surface creation.
-impl private::Sealed for () {}
 impl SurfaceMemoryDescriptor for () {
-    type DescriptorAttribute = ();
-
-    fn build_descriptor(&mut self) -> Self::DescriptorAttribute {}
-
-    fn add_attrs(
-        &mut self,
-        _: &mut Vec<bindings::VASurfaceAttrib>,
-        _: &mut Self::DescriptorAttribute,
-    ) {
+    fn add_attrs(&mut self, _: &mut Vec<bindings::VASurfaceAttrib>) -> Option<Box<dyn Any>> {
+        None
     }
 }
+
+/// Sealed trait pattern to avoid reimplementation of our local traits.
+mod private {
+    pub trait Sealed {}
+}
+
+/// Trait for types that can be used as a `VASurfaceAttribExternalBufferDescriptor`.
+pub trait SurfaceExternalDescriptor: private::Sealed {}
+impl private::Sealed for bindings::VASurfaceAttribExternalBuffers {}
+impl SurfaceExternalDescriptor for bindings::VASurfaceAttribExternalBuffers {}
+impl private::Sealed for bindings::VADRMPRIMESurfaceDescriptor {}
+impl SurfaceExternalDescriptor for bindings::VADRMPRIMESurfaceDescriptor {}
 
 /// Trait allowing to import an external memory source to use with a surface by setting the
 /// `VASurfaceAttribMemoryType` and `VASurfaceAttribExternalBuffers` attributes.
@@ -84,26 +76,22 @@ pub trait ExternalBufferDescriptor {
     fn va_surface_attribute(&mut self) -> Self::DescriptorAttribute;
 }
 
-impl<T> private::Sealed for T where T: ExternalBufferDescriptor {}
 impl<T> SurfaceMemoryDescriptor for T
 where
     T: ExternalBufferDescriptor,
+    <T as ExternalBufferDescriptor>::DescriptorAttribute: 'static,
 {
-    type DescriptorAttribute = <Self as ExternalBufferDescriptor>::DescriptorAttribute;
+    fn add_attrs(&mut self, attrs: &mut Vec<bindings::VASurfaceAttrib>) -> Option<Box<dyn Any>> {
+        let mut desc = Box::new(self.va_surface_attribute());
 
-    fn build_descriptor(&mut self) -> Self::DescriptorAttribute {
-        self.va_surface_attribute()
-    }
-
-    fn add_attrs(
-        &mut self,
-        attrs: &mut Vec<bindings::VASurfaceAttrib>,
-        desc: &mut Self::DescriptorAttribute,
-    ) {
         attrs.push(bindings::VASurfaceAttrib::new_memory_type(
             Self::MEMORY_TYPE,
         ));
-        attrs.push(bindings::VASurfaceAttrib::new_buffer_descriptor(desc));
+        attrs.push(bindings::VASurfaceAttrib::new_buffer_descriptor(
+            desc.as_mut(),
+        ));
+
+        Some(desc)
     }
 }
 
@@ -203,9 +191,8 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
                 attrs.push(bindings::VASurfaceAttrib::new_pixel_format(fourcc));
             }
 
-            let mut va_desc = Box::new(descriptor.build_descriptor());
-            descriptor.add_attrs(&mut attrs, &mut va_desc);
-
+            // Just to be kept alive until we call `vaCreateSurfaces`...
+            let mut _va_desc = descriptor.add_attrs(&mut attrs);
             let mut surface_id: VASurfaceID = 0;
 
             // Safe because `self` represents a valid VADisplay. The `surface` and `attrs` vectors are

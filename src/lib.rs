@@ -24,6 +24,7 @@ pub use bindings::VAConfigAttribType;
 pub use bindings::VAEntrypoint;
 pub use bindings::VAImageFormat;
 pub use bindings::VAProfile;
+pub use bindings::VASurfaceAttrib;
 pub use bindings::VASurfaceAttribExternalBuffers;
 pub use bindings::VASurfaceAttribType;
 pub use bindings::VASurfaceID;
