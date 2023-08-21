@@ -123,6 +123,34 @@ impl Buffer {
             BufferType::SliceData(ref mut data) => {
                 (data.as_mut_ptr() as *mut std::ffi::c_void, data.len())
             }
+
+            BufferType::EncSequenceParameter(ref mut seq_param) => match seq_param {
+                EncSequenceParameter::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
+
+            BufferType::EncPictureParameter(ref mut picture_param) => match picture_param {
+                EncPictureParameter::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
+
+            BufferType::EncSliceParameter(ref mut slice_param) => match slice_param {
+                EncSliceParameter::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
+
+            BufferType::EncMacroblockParameterBuffer(ref mut mb_param) => match mb_param {
+                EncMacroblockParameterBuffer::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -179,6 +207,14 @@ pub enum BufferType {
     Probability(vp8::ProbabilityDataBufferVP8),
     /// Abstraction over `VASliceDataBufferType`. Needed for VP9, H264.
     SliceData(Vec<u8>),
+    /// Abstraction over `VAEncSequenceParameterBufferType`. Needed for MPEG2, VP8, VP9, H264, HEVC.
+    EncSequenceParameter(EncSequenceParameter),
+    /// Abstraction over `VAEncPictureParameterBufferType`. Needed for MPEG2, VP8, VP9, H264, HEVC.
+    EncPictureParameter(EncPictureParameter),
+    /// Abstraction over `VAEncSliceParameterBufferType`. Needed for MPEG2, VP8, VP9, H264, HEVC.
+    EncSliceParameter(EncSliceParameter),
+    /// Abstraction over `VAEncMacroblockMapBufferType`. Needed for H264.
+    EncMacroblockParameterBuffer(EncMacroblockParameterBuffer),
 }
 
 impl BufferType {
@@ -190,6 +226,22 @@ impl BufferType {
             BufferType::IQMatrix(_) => bindings::VABufferType::VAIQMatrixBufferType,
             BufferType::Probability(_) => bindings::VABufferType::VAProbabilityBufferType,
             BufferType::SliceData { .. } => bindings::VABufferType::VASliceDataBufferType,
+
+            BufferType::EncSequenceParameter(_) => {
+                bindings::VABufferType::VAEncSequenceParameterBufferType
+            }
+
+            BufferType::EncPictureParameter(_) => {
+                bindings::VABufferType::VAEncPictureParameterBufferType
+            }
+
+            BufferType::EncSliceParameter(_) => {
+                bindings::VABufferType::VAEncSliceParameterBufferType
+            }
+
+            BufferType::EncMacroblockParameterBuffer(_) => {
+                bindings::VABufferType::VAEncMacroblockMapBufferType
+            }
         }
     }
 }
@@ -238,4 +290,28 @@ pub enum IQMatrix {
     H264(h264::IQMatrixBufferH264),
     /// Abstraction over `VAIQMatrixBufferHEVC`
     HEVC(hevc::IQMatrixBufferHEVC),
+}
+
+/// Abstraction over the `EncSequenceParameter` types we support.
+pub enum EncSequenceParameter {
+    /// Abstraction over `VAEncSequenceParameterBufferH264`
+    H264(h264::EncSequenceParameterBufferH264),
+}
+
+/// Abstraction over the `EncPictureParameter` types we support.
+pub enum EncPictureParameter {
+    /// Abstraction over `VAEncPictureParameterBufferH264`
+    H264(h264::EncPictureParameterBufferH264),
+}
+
+/// Abstraction over the `EncSliceParameter` types we support.
+pub enum EncSliceParameter {
+    /// Abstraction over `VAEncSliceParameterBufferH264`
+    H264(h264::EncSliceParameterBufferH264),
+}
+
+/// Abstraction over the `EncMacroblockParameterBuffer` types we support.
+pub enum EncMacroblockParameterBuffer {
+    /// Abstraction over `VAEncMacroblockParameterBufferH264`
+    H264(h264::EncMacroblockParameterBufferH264),
 }
