@@ -233,7 +233,52 @@ impl<T> Picture<PictureEnd, T> {
     }
 }
 
-impl<T> Picture<PictureSync, T> {
+impl<S: PictureState, T> Picture<S, T> {
+    /// Returns the timestamp of this picture.
+    pub fn timestamp(&self) -> u64 {
+        self.inner.timestamp
+    }
+
+    /// Returns a reference to the underlying `Surface`.
+    ///
+    /// If you are interested in obtaining the container of the `Surface`, use `as_ref()` instead.
+    /// This is a convenience method to avoid having to call `borrow()` every time the surface is
+    /// needed.
+    pub fn surface<D: SurfaceMemoryDescriptor>(&self) -> &Surface<D>
+    where
+        T: Borrow<Surface<D>>,
+    {
+        self.as_ref().borrow()
+    }
+
+    /// Returns a reference to the display owning this `Picture`.
+    pub(crate) fn display(&self) -> &Rc<Display> {
+        self.inner.context.display()
+    }
+}
+
+impl<S: PictureReclaimableSurface, T> Picture<S, T> {
+    /// Reclaim ownership of the Surface this picture has been created from, consuming the picture
+    /// in the process. Useful if the Surface is part of a pool.
+    ///
+    /// This will fail and return the passed object if there are more than one reference to the
+    /// underlying surface.
+    pub fn take_surface(self) -> Result<T, Self> {
+        let inner = self.inner;
+        match Rc::try_unwrap(inner.surface) {
+            Ok(surface) => Ok(surface),
+            Err(surface) => Err(Self {
+                inner: Box::new(PictureInner {
+                    surface,
+                    context: inner.context,
+                    buffers: inner.buffers,
+                    timestamp: inner.timestamp,
+                }),
+                phantom: PhantomData,
+            }),
+        }
+    }
+
     /// Create a new derived image from this `Picture` using `vaDeriveImage`.
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of the
@@ -306,53 +351,6 @@ impl<T> Picture<PictureSync, T> {
 
                 Err(e)
             }
-        }
-    }
-}
-
-impl<S: PictureState, T> Picture<S, T> {
-    /// Returns the timestamp of this picture.
-    pub fn timestamp(&self) -> u64 {
-        self.inner.timestamp
-    }
-
-    /// Returns a reference to the underlying `Surface`.
-    ///
-    /// If you are interested in obtaining the container of the `Surface`, use `as_ref()` instead.
-    /// This is a convenience method to avoid having to call `borrow()` every time the surface is
-    /// needed.
-    pub fn surface<D: SurfaceMemoryDescriptor>(&self) -> &Surface<D>
-    where
-        T: Borrow<Surface<D>>,
-    {
-        self.as_ref().borrow()
-    }
-
-    /// Returns a reference to the display owning this `Picture`.
-    pub(crate) fn display(&self) -> &Rc<Display> {
-        self.inner.context.display()
-    }
-}
-
-impl<S: PictureReclaimableSurface, T> Picture<S, T> {
-    /// Reclaim ownership of the Surface this picture has been created from, consuming the picture
-    /// in the process. Useful if the Surface is part of a pool.
-    ///
-    /// This will fail and return the passed object if there are more than one reference to the
-    /// underlying surface.
-    pub fn take_surface(self) -> Result<T, Self> {
-        let inner = self.inner;
-        match Rc::try_unwrap(inner.surface) {
-            Ok(surface) => Ok(surface),
-            Err(surface) => Err(Self {
-                inner: Box::new(PictureInner {
-                    surface,
-                    context: inner.context,
-                    buffers: inner.buffers,
-                    timestamp: inner.timestamp,
-                }),
-                phantom: PhantomData,
-            }),
         }
     }
 }

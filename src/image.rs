@@ -7,9 +7,9 @@ use std::rc::Rc;
 
 use crate::bindings;
 use crate::picture::Picture;
-use crate::picture::PictureSync;
 use crate::va_check;
 use crate::Display;
+use crate::PictureReclaimableSurface;
 use crate::Surface;
 use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
@@ -38,8 +38,12 @@ impl<'a> Image<'a> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    pub(crate) fn new<D: SurfaceMemoryDescriptor, T: Borrow<Surface<D>>>(
-        picture: &'a Picture<PictureSync, T>,
+    pub(crate) fn new<
+        D: SurfaceMemoryDescriptor,
+        T: Borrow<Surface<D>>,
+        S: PictureReclaimableSurface,
+    >(
+        picture: &'a Picture<S, T>,
         image: bindings::VAImage,
         derived: bool,
         display_resolution: (u32, u32),
