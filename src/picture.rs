@@ -286,7 +286,7 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
     pub fn derive_image<D: SurfaceMemoryDescriptor>(
         &self,
         display_resolution: (u32, u32),
-    ) -> Result<Image, VaError>
+    ) -> Result<Image<D>, VaError>
     where
         T: Borrow<Surface<D>>,
     {
@@ -309,7 +309,7 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
         mut format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
         display_resolution: (u32, u32),
-    ) -> Result<Image, VaError>
+    ) -> Result<Image<D>, VaError>
     where
         T: Borrow<Surface<D>>,
     {

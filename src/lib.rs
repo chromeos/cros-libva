@@ -90,7 +90,7 @@ mod tests {
     use super::*;
 
     /// Returns a 32-bit CRC for the visible part of `image`, which must be in NV12 format.
-    fn crc_nv12_image(image: &Image) -> u32 {
+    fn crc_nv12_image<D: SurfaceMemoryDescriptor + 'static>(image: &Image<D>) -> u32 {
         let data = image.as_ref();
         let va_image = image.image();
         let offsets = &va_image.offsets;

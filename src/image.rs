@@ -18,13 +18,13 @@ use crate::VaError;
 ///
 /// An image is used to either get the surface data to client memory, or to copy image data in
 /// client memory to a surface.
-pub struct Image<'a> {
+pub struct Image<'a, D: SurfaceMemoryDescriptor> {
     /// The display from which the image was created, so we can unmap it upon destruction.
     display: Rc<Display>,
     /// The `VAImage` returned by libva.
     image: bindings::VAImage,
     /// The mapped surface data.
-    data: &'a [u8],
+    data: &'a mut [u8],
     /// Whether the image was derived using the `vaDeriveImage` API or created using the
     /// `vaCreateImage` API.
     derived: bool,
@@ -32,17 +32,20 @@ pub struct Image<'a> {
     /// free to enlarge this value as needed. In any case, we guarantee that an
     /// image at least as large is returned.
     display_resolution: (u32, u32),
+    /// Tracks whether the underlying data has possibly been written to, i.e. an encoder will create
+    /// an image and map its buffer in order to write to it, so we must writeback later.
+    dirty: bool,
+    /// We need the surface to writeback the image. Also, from a logical POV,
+    /// the surface, which is the backing of the data, should not drop while we
+    /// live.
+    surface: &'a Surface<D>,
 }
 
-impl<'a> Image<'a> {
+impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    pub(crate) fn new<
-        D: SurfaceMemoryDescriptor,
-        T: Borrow<Surface<D>>,
-        S: PictureReclaimableSurface,
-    >(
+    pub(crate) fn new<T: Borrow<Surface<D>>, S: PictureReclaimableSurface>(
         picture: &'a Picture<S, T>,
         image: bindings::VAImage,
         derived: bool,
@@ -72,6 +75,8 @@ impl<'a> Image<'a> {
                     data,
                     derived,
                     display_resolution,
+                    dirty: false,
+                    surface: picture.surface(),
                 })
             }
             Err(e) => {
@@ -110,14 +115,42 @@ impl<'a> Image<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Image<'a> {
+impl<'a, D: SurfaceMemoryDescriptor> AsRef<[u8]> for Image<'a, D> {
     fn as_ref(&self) -> &[u8] {
         self.data
     }
 }
 
-impl<'a> Drop for Image<'a> {
+impl<'a, D: SurfaceMemoryDescriptor> AsMut<[u8]> for Image<'a, D> {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.dirty = true;
+        self.data
+    }
+}
+
+impl<'a, D: SurfaceMemoryDescriptor> Drop for Image<'a, D> {
     fn drop(&mut self) {
+        if !self.derived && self.dirty {
+            // Safe because `picture.inner.context` represents a valid `VAContext`,
+            // `picture.surface` represents a valid `VASurface` and `image` represents a valid
+            // `VAImage`.
+            unsafe {
+                bindings::vaPutImage(
+                    self.display.handle(),
+                    self.surface.id(),
+                    self.image.image_id,
+                    0,
+                    0,
+                    self.image.width as u32,
+                    self.image.height as u32,
+                    0,
+                    0,
+                    self.image.width as u32,
+                    self.image.height as u32,
+                );
+            }
+        }
+
         unsafe {
             // Safe since the buffer is mapped in `Image::new`, so `self.image.buf` points to a
             // valid `VABufferID`.
