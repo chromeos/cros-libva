@@ -129,10 +129,18 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                EncSequenceParameter::VP9(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::EncPictureParameter(ref mut picture_param) => match picture_param {
                 EncPictureParameter::H264(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncPictureParameter::VP9(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -296,12 +304,16 @@ pub enum IQMatrix {
 pub enum EncSequenceParameter {
     /// Abstraction over `VAEncSequenceParameterBufferH264`
     H264(h264::EncSequenceParameterBufferH264),
+    /// Abstraction over `VAEncSequenceParameterBufferVP9`
+    VP9(vp9::EncSequenceParameterBufferVP9),
 }
 
 /// Abstraction over the `EncPictureParameter` types we support.
 pub enum EncPictureParameter {
     /// Abstraction over `VAEncPictureParameterBufferH264`
     H264(h264::EncPictureParameterBufferH264),
+    /// Abstraction over `VAEncPictureParameterBufferVP9`
+    VP9(vp9::EncPictureParameterBufferVP9),
 }
 
 /// Abstraction over the `EncSliceParameter` types we support.
