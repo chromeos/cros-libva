@@ -681,3 +681,474 @@ impl IQMatrixBufferHEVC {
         self.0.as_ref()
     }
 }
+
+pub struct HEVCEncSeqFields(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_1);
+
+impl HEVCEncSeqFields {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chroma_format_idc: u32,
+        separate_colour_plane_flag: u32,
+        bit_depth_luma_minus8: u32,
+        bit_depth_chroma_minus8: u32,
+        scaling_list_enabled_flag: u32,
+        strong_intra_smoothing_enabled_flag: u32,
+        amp_enabled_flag: u32,
+        sample_adaptive_offset_enabled_flag: u32,
+        pcm_enabled_flag: u32,
+        pcm_loop_filter_disabled_flag: u32,
+        sps_temporal_mvp_enabled_flag: u32,
+        low_delay_seq: u32,
+        hierachical_flag: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                chroma_format_idc,
+                separate_colour_plane_flag,
+                bit_depth_luma_minus8,
+                bit_depth_chroma_minus8,
+                scaling_list_enabled_flag,
+                strong_intra_smoothing_enabled_flag,
+                amp_enabled_flag,
+                sample_adaptive_offset_enabled_flag,
+                pcm_enabled_flag,
+                pcm_loop_filter_disabled_flag,
+                sps_temporal_mvp_enabled_flag,
+                low_delay_seq,
+                hierachical_flag,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_1 {
+            bits: bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+#[derive(Default)]
+pub struct HevcEncVuiFields(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_2);
+
+impl HevcEncVuiFields {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        aspect_ratio_info_present_flag: u32,
+        neutral_chroma_indication_flag: u32,
+        field_seq_flag: u32,
+        vui_timing_info_present_flag: u32,
+        bitstream_restriction_flag: u32,
+        tiles_fixed_structure_flag: u32,
+        motion_vectors_over_pic_boundaries_flag: u32,
+        restricted_ref_pic_lists_flag: u32,
+        log2_max_mv_length_horizontal: u32,
+        log2_max_mv_length_vertical: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_2__bindgen_ty_1::new_bitfield_1(
+                aspect_ratio_info_present_flag,
+                neutral_chroma_indication_flag,
+                field_seq_flag,
+                vui_timing_info_present_flag,
+                bitstream_restriction_flag,
+                tiles_fixed_structure_flag,
+                motion_vectors_over_pic_boundaries_flag,
+                restricted_ref_pic_lists_flag,
+                log2_max_mv_length_horizontal,
+                log2_max_mv_length_vertical,
+            );
+
+        Self(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_2 {
+            bits: bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_2__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+                __bindgen_padding_0: Default::default(),
+            },
+        })
+    }
+}
+
+pub struct HevcEncSeqSccFields(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_3);
+
+impl HevcEncSeqSccFields {
+    pub fn new(palette_mode_enabled_flag: u32) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_3__bindgen_ty_1::new_bitfield_1(
+                palette_mode_enabled_flag,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_3 {
+            bits: bindings::_VAEncSequenceParameterBufferHEVC__bindgen_ty_3__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+pub struct EncSequenceParameterBufferHEVC(Box<bindings::VAEncSequenceParameterBufferHEVC>);
+
+impl EncSequenceParameterBufferHEVC {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        general_profile_idc: u8,
+        general_level_idc: u8,
+        general_tier_flag: u8,
+        intra_period: u32,
+        intra_idr_period: u32,
+        ip_period: u32,
+        bits_per_second: u32,
+        pic_width_in_luma_samples: u16,
+        pic_height_in_luma_samples: u16,
+        seq_fields: &HEVCEncSeqFields,
+        log2_min_luma_coding_block_size_minus3: u8,
+        log2_diff_max_min_luma_coding_block_size: u8,
+        log2_min_transform_block_size_minus2: u8,
+        log2_diff_max_min_transform_block_size: u8,
+        max_transform_hierarchy_depth_inter: u8,
+        max_transform_hierarchy_depth_intra: u8,
+        pcm_sample_bit_depth_luma_minus1: u32,
+        pcm_sample_bit_depth_chroma_minus1: u32,
+        log2_min_pcm_luma_coding_block_size_minus3: u32,
+        log2_max_pcm_luma_coding_block_size_minus3: u32,
+        vui_fields: Option<HevcEncVuiFields>,
+        aspect_ratio_idc: u8,
+        sar_width: u32,
+        sar_height: u32,
+        vui_num_units_in_tick: u32,
+        vui_time_scale: u32,
+        min_spatial_segmentation_idc: u16,
+        max_bytes_per_pic_denom: u8,
+        max_bits_per_min_cu_denom: u8,
+        scc_fields: &HevcEncSeqSccFields,
+    ) -> Self {
+        let seq_fields = seq_fields.0;
+        let vui_parameters_present_flag = vui_fields.is_some() as u8;
+        let vui_fields = vui_fields.unwrap_or_default().0;
+        let scc_fields = scc_fields.0;
+
+        Self(Box::new(bindings::VAEncSequenceParameterBufferHEVC {
+            general_profile_idc,
+            general_level_idc,
+            general_tier_flag,
+            intra_period,
+            intra_idr_period,
+            ip_period,
+            bits_per_second,
+            pic_width_in_luma_samples,
+            pic_height_in_luma_samples,
+            seq_fields,
+            log2_min_luma_coding_block_size_minus3,
+            log2_diff_max_min_luma_coding_block_size,
+            log2_min_transform_block_size_minus2,
+            log2_diff_max_min_transform_block_size,
+            max_transform_hierarchy_depth_inter,
+            max_transform_hierarchy_depth_intra,
+            pcm_sample_bit_depth_luma_minus1,
+            pcm_sample_bit_depth_chroma_minus1,
+            log2_min_pcm_luma_coding_block_size_minus3,
+            log2_max_pcm_luma_coding_block_size_minus3,
+            vui_parameters_present_flag,
+            vui_fields,
+            aspect_ratio_idc,
+            sar_width,
+            sar_height,
+            vui_num_units_in_tick,
+            vui_time_scale,
+            min_spatial_segmentation_idc,
+            max_bytes_per_pic_denom,
+            max_bits_per_min_cu_denom,
+            scc_fields,
+            va_reserved: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAEncSequenceParameterBufferHEVC {
+        &mut self.0
+    }
+}
+
+pub struct HEVCEncPicFields(bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_1);
+
+impl HEVCEncPicFields {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        idr_pic_flag: u32,
+        coding_type: u32,
+        reference_pic_flag: u32,
+        dependent_slice_segments_enabled_flag: u32,
+        sign_data_hiding_enabled_flag: u32,
+        constrained_intra_pred_flag: u32,
+        transform_skip_enabled_flag: u32,
+        cu_qp_delta_enabled_flag: u32,
+        weighted_pred_flag: u32,
+        weighted_bipred_flag: u32,
+        transquant_bypass_enabled_flag: u32,
+        tiles_enabled_flag: u32,
+        entropy_coding_sync_enabled_flag: u32,
+        loop_filter_across_tiles_enabled_flag: u32,
+        pps_loop_filter_across_slices_enabled_flag: u32,
+        scaling_list_data_present_flag: u32,
+        screen_content_flag: u32,
+        enable_gpu_weighted_prediction: u32,
+        no_output_of_prior_pics_flag: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                idr_pic_flag,
+                coding_type,
+                reference_pic_flag,
+                dependent_slice_segments_enabled_flag,
+                sign_data_hiding_enabled_flag,
+                constrained_intra_pred_flag,
+                transform_skip_enabled_flag,
+                cu_qp_delta_enabled_flag,
+                weighted_pred_flag,
+                weighted_bipred_flag,
+                transquant_bypass_enabled_flag,
+                tiles_enabled_flag,
+                entropy_coding_sync_enabled_flag,
+                loop_filter_across_tiles_enabled_flag,
+                pps_loop_filter_across_slices_enabled_flag,
+                scaling_list_data_present_flag,
+                screen_content_flag,
+                enable_gpu_weighted_prediction,
+                no_output_of_prior_pics_flag,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_1 {
+            bits: bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+pub struct HevcEncPicSccFields(bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_2);
+
+impl HevcEncPicSccFields {
+    pub fn new(pps_curr_pic_ref_enabled_flag: u16) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_2__bindgen_ty_1::new_bitfield_1(
+                pps_curr_pic_ref_enabled_flag,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_2 {
+            bits: bindings::_VAEncPictureParameterBufferHEVC__bindgen_ty_2__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+pub struct EncPictureParameterBufferHEVC(Box<bindings::VAEncPictureParameterBufferHEVC>);
+
+impl EncPictureParameterBufferHEVC {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        decoded_curr_pic: PictureHEVC,
+        reference_frames: [PictureHEVC; 15usize],
+        coded_buf: bindings::VABufferID,
+        collocated_ref_pic_index: u8,
+        last_picture: u8,
+        pic_init_qp: u8,
+        diff_cu_qp_delta_depth: u8,
+        pps_cb_qp_offset: i8,
+        pps_cr_qp_offset: i8,
+        num_tile_columns_minus1: u8,
+        num_tile_rows_minus1: u8,
+        column_width_minus1: [u8; 19usize],
+        row_height_minus1: [u8; 21usize],
+        log2_parallel_merge_level_minus2: u8,
+        ctu_max_bitsize_allowed: u8,
+        num_ref_idx_l0_default_active_minus1: u8,
+        num_ref_idx_l1_default_active_minus1: u8,
+        slice_pic_parameter_set_id: u8,
+        nal_unit_type: u8,
+        pic_fields: &HEVCEncPicFields,
+        hierarchical_level_plus1: u8,
+        va_byte_reserved: u8,
+        scc_fields: &HevcEncPicSccFields,
+    ) -> Self {
+        let decoded_curr_pic = decoded_curr_pic.0;
+        let reference_frames = (0..15usize)
+            .map(|i| reference_frames[i].0)
+            .collect::<Vec<_>>()
+            .try_into()
+            // try_into is guaranteed to work because the iterator and target array have the same
+            // size.
+            .unwrap();
+
+        let pic_fields = pic_fields.0;
+        let scc_fields = scc_fields.0;
+
+        Self(Box::new(bindings::VAEncPictureParameterBufferHEVC {
+            decoded_curr_pic,
+            reference_frames,
+            coded_buf,
+            collocated_ref_pic_index,
+            last_picture,
+            pic_init_qp,
+            diff_cu_qp_delta_depth,
+            pps_cb_qp_offset,
+            pps_cr_qp_offset,
+            num_tile_columns_minus1,
+            num_tile_rows_minus1,
+            column_width_minus1,
+            row_height_minus1,
+            log2_parallel_merge_level_minus2,
+            ctu_max_bitsize_allowed,
+            num_ref_idx_l0_default_active_minus1,
+            num_ref_idx_l1_default_active_minus1,
+            slice_pic_parameter_set_id,
+            nal_unit_type,
+            pic_fields,
+            hierarchical_level_plus1,
+            va_byte_reserved,
+            scc_fields,
+            va_reserved: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAEncPictureParameterBufferHEVC {
+        &mut self.0
+    }
+}
+
+pub struct HevcEncSliceFields(bindings::_VAEncSliceParameterBufferHEVC__bindgen_ty_1);
+
+impl HevcEncSliceFields {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        last_slice_of_pic_flag: u32,
+        dependent_slice_segment_flag: u32,
+        colour_plane_id: u32,
+        slice_temporal_mvp_enabled_flag: u32,
+        slice_sao_luma_flag: u32,
+        slice_sao_chroma_flag: u32,
+        num_ref_idx_active_override_flag: u32,
+        mvd_l1_zero_flag: u32,
+        cabac_init_flag: u32,
+        slice_deblocking_filter_disabled_flag: u32,
+        slice_loop_filter_across_slices_enabled_flag: u32,
+        collocated_from_l0_flag: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncSliceParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                last_slice_of_pic_flag,
+                dependent_slice_segment_flag,
+                colour_plane_id,
+                slice_temporal_mvp_enabled_flag,
+                slice_sao_luma_flag,
+                slice_sao_chroma_flag,
+                num_ref_idx_active_override_flag,
+                mvd_l1_zero_flag,
+                cabac_init_flag,
+                slice_deblocking_filter_disabled_flag,
+                slice_loop_filter_across_slices_enabled_flag,
+                collocated_from_l0_flag,
+            );
+
+        Self(bindings::_VAEncSliceParameterBufferHEVC__bindgen_ty_1 {
+            bits: bindings::_VAEncSliceParameterBufferHEVC__bindgen_ty_1__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+                __bindgen_padding_0: Default::default(),
+            },
+        })
+    }
+}
+
+pub struct EncSliceParameterBufferHEVC(Box<bindings::VAEncSliceParameterBufferHEVC>);
+
+impl EncSliceParameterBufferHEVC {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        slice_segment_address: u32,
+        num_ctu_in_slice: u32,
+        slice_type: u8,
+        slice_pic_parameter_set_id: u8,
+        num_ref_idx_l0_active_minus1: u8,
+        num_ref_idx_l1_active_minus1: u8,
+        ref_pic_list0: [PictureHEVC; 15usize],
+        ref_pic_list1: [PictureHEVC; 15usize],
+        luma_log2_weight_denom: u8,
+        delta_chroma_log2_weight_denom: i8,
+        delta_luma_weight_l0: [i8; 15usize],
+        luma_offset_l0: [i8; 15usize],
+        delta_chroma_weight_l0: [[i8; 2usize]; 15usize],
+        chroma_offset_l0: [[i8; 2usize]; 15usize],
+        delta_luma_weight_l1: [i8; 15usize],
+        luma_offset_l1: [i8; 15usize],
+        delta_chroma_weight_l1: [[i8; 2usize]; 15usize],
+        chroma_offset_l1: [[i8; 2usize]; 15usize],
+        max_num_merge_cand: u8,
+        slice_qp_delta: i8,
+        slice_cb_qp_offset: i8,
+        slice_cr_qp_offset: i8,
+        slice_beta_offset_div2: i8,
+        slice_tc_offset_div2: i8,
+        slice_fields: &HevcEncSliceFields,
+        pred_weight_table_bit_offset: u32,
+        pred_weight_table_bit_length: u32,
+    ) -> Self {
+        let ref_pic_list0 = (0..15usize)
+            .map(|i| ref_pic_list0[i].0)
+            .collect::<Vec<_>>()
+            .try_into()
+            // try_into is guaranteed to work because the iterator and target array have the same
+            // size.
+            .unwrap();
+
+        let ref_pic_list1 = (0..15usize)
+            .map(|i| ref_pic_list1[i].0)
+            .collect::<Vec<_>>()
+            .try_into()
+            // try_into is guaranteed to work because the iterator and target array have the same
+            // size.
+            .unwrap();
+
+        let slice_fields = slice_fields.0;
+
+        Self(Box::new(bindings::VAEncSliceParameterBufferHEVC {
+            slice_segment_address,
+            num_ctu_in_slice,
+            slice_type,
+            slice_pic_parameter_set_id,
+            num_ref_idx_l0_active_minus1,
+            num_ref_idx_l1_active_minus1,
+            ref_pic_list0,
+            ref_pic_list1,
+            luma_log2_weight_denom,
+            delta_chroma_log2_weight_denom,
+            delta_luma_weight_l0,
+            luma_offset_l0,
+            delta_chroma_weight_l0,
+            chroma_offset_l0,
+            delta_luma_weight_l1,
+            luma_offset_l1,
+            delta_chroma_weight_l1,
+            chroma_offset_l1,
+            max_num_merge_cand,
+            slice_qp_delta,
+            slice_cb_qp_offset,
+            slice_cr_qp_offset,
+            slice_beta_offset_div2,
+            slice_tc_offset_div2,
+            slice_fields,
+            pred_weight_table_bit_offset,
+            pred_weight_table_bit_length,
+            va_reserved: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAEncSliceParameterBufferHEVC {
+        &mut self.0
+    }
+}
