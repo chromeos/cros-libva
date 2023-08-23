@@ -213,3 +213,185 @@ impl ProbabilityDataBufferVP8 {
         self.0.as_ref()
     }
 }
+
+pub struct EncSequenceParameterBufferVP8(Box<bindings::VAEncSequenceParameterBufferVP8>);
+
+impl EncSequenceParameterBufferVP8 {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        frame_width: u32,
+        frame_height: u32,
+        frame_width_scale: u32,
+        frame_height_scale: u32,
+        error_resilient: u32,
+        kf_auto: u32,
+        kf_min_dist: u32,
+        kf_max_dist: u32,
+        bits_per_second: u32,
+        intra_period: u32,
+        reference_frames: [bindings::VASurfaceID; 4usize],
+    ) -> Self {
+        Self(Box::new(bindings::VAEncSequenceParameterBufferVP8 {
+            frame_width,
+            frame_height,
+            frame_width_scale,
+            frame_height_scale,
+            error_resilient,
+            kf_auto,
+            kf_min_dist,
+            kf_max_dist,
+            bits_per_second,
+            intra_period,
+            reference_frames,
+            va_reserved: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAEncSequenceParameterBufferVP8 {
+        &mut self.0
+    }
+}
+
+pub struct VP8EncRefFlags(bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_1);
+
+impl VP8EncRefFlags {
+    pub fn new(
+        force_kf: u32,
+        no_ref_last: u32,
+        no_ref_gf: u32,
+        no_ref_arf: u32,
+        temporal_id: u32,
+        first_ref: u32,
+        second_ref: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                force_kf,
+                no_ref_last,
+                no_ref_gf,
+                no_ref_arf,
+                temporal_id,
+                first_ref,
+                second_ref,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_1 {
+            bits: bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_1__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+pub struct VP8EncPicFlags(bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_2);
+
+impl VP8EncPicFlags {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        frame_type: u32,
+        version: u32,
+        show_frame: u32,
+        color_space: u32,
+        recon_filter_type: u32,
+        loop_filter_type: u32,
+        auto_partitions: u32,
+        num_token_partitions: u32,
+        clamping_type: u32,
+        segmentation_enabled: u32,
+        update_mb_segmentation_map: u32,
+        update_segment_feature_data: u32,
+        loop_filter_adj_enable: u32,
+        refresh_entropy_probs: u32,
+        refresh_golden_frame: u32,
+        refresh_alternate_frame: u32,
+        refresh_last: u32,
+        copy_buffer_to_golden: u32,
+        copy_buffer_to_alternate: u32,
+        sign_bias_golden: u32,
+        sign_bias_alternate: u32,
+        mb_no_coeff_skip: u32,
+        forced_lf_adjustment: u32,
+    ) -> Self {
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_2__bindgen_ty_1::new_bitfield_1(
+                frame_type,
+                version,
+                show_frame,
+                color_space,
+                recon_filter_type,
+                loop_filter_type,
+                auto_partitions,
+                num_token_partitions,
+                clamping_type,
+                segmentation_enabled,
+                update_mb_segmentation_map,
+                update_segment_feature_data,
+                loop_filter_adj_enable,
+                refresh_entropy_probs,
+                refresh_golden_frame,
+                refresh_alternate_frame,
+                refresh_last,
+                copy_buffer_to_golden,
+                copy_buffer_to_alternate,
+                sign_bias_golden,
+                sign_bias_alternate,
+                mb_no_coeff_skip,
+                forced_lf_adjustment,
+                Default::default(),
+            );
+
+        Self(bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_2 {
+            bits: bindings::_VAEncPictureParameterBufferVP8__bindgen_ty_2__bindgen_ty_1 {
+                _bitfield_align_1: Default::default(),
+                _bitfield_1,
+            },
+        })
+    }
+}
+
+pub struct EncPictureParameterBufferVP8(Box<bindings::VAEncPictureParameterBufferVP8>);
+
+impl EncPictureParameterBufferVP8 {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        reconstructed_frame: bindings::VASurfaceID,
+        ref_last_frame: bindings::VASurfaceID,
+        ref_gf_frame: bindings::VASurfaceID,
+        ref_arf_frame: bindings::VASurfaceID,
+        coded_buf: bindings::VABufferID,
+        ref_flags: &VP8EncRefFlags,
+        pic_flags: &VP8EncPicFlags,
+        loop_filter_level: [i8; 4usize],
+        ref_lf_delta: [i8; 4usize],
+        mode_lf_delta: [i8; 4usize],
+        sharpness_level: u8,
+        clamp_qindex_high: u8,
+        clamp_qindex_low: u8,
+    ) -> Self {
+        let ref_flags = ref_flags.0;
+        let pic_flags = pic_flags.0;
+
+        Self(Box::new(bindings::VAEncPictureParameterBufferVP8 {
+            reconstructed_frame,
+            ref_last_frame,
+            ref_gf_frame,
+            ref_arf_frame,
+            coded_buf,
+            ref_flags,
+            pic_flags,
+            loop_filter_level,
+            ref_lf_delta,
+            mode_lf_delta,
+            sharpness_level,
+            clamp_qindex_high,
+            clamp_qindex_low,
+            va_reserved: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAEncPictureParameterBufferVP8 {
+        &mut self.0
+    }
+}
