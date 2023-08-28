@@ -9,7 +9,6 @@ use std::rc::Rc;
 use crate::bindings;
 use crate::buffer::Buffer;
 use crate::context::Context;
-use crate::display::Display;
 use crate::surface::Surface;
 use crate::va_check;
 use crate::Image;
@@ -250,11 +249,6 @@ impl<S: PictureState, T> Picture<S, T> {
     {
         self.as_ref().borrow()
     }
-
-    /// Returns a reference to the display owning this `Picture`.
-    pub(crate) fn display(&self) -> &Rc<Display> {
-        self.inner.context.display()
-    }
 }
 
 impl<S: PictureReclaimableSurface, T> Picture<S, T> {
@@ -290,15 +284,7 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
     where
         T: Borrow<Surface<D>>,
     {
-        // An all-zero byte-pattern is a valid initial value for `VAImage`.
-        let mut image: bindings::VAImage = Default::default();
-
-        // Safe because `self` has a valid display handle and ID.
-        va_check(unsafe {
-            bindings::vaDeriveImage(self.display().handle(), self.surface().id(), &mut image)
-        })?;
-
-        Image::new(self, image, true, display_resolution)
+        Image::derive_from(self.surface(), display_resolution)
     }
 
     /// Create new image from the `Picture` using `vaCreateImage` and `vaGetImage`.
@@ -306,52 +292,14 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
     /// The image will contain a copy of the `Picture` in the desired `format` and `coded_resolution`.
     pub fn create_image<D: SurfaceMemoryDescriptor>(
         &self,
-        mut format: bindings::VAImageFormat,
+        format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
         display_resolution: (u32, u32),
     ) -> Result<Image<D>, VaError>
     where
         T: Borrow<Surface<D>>,
     {
-        let dpy = self.display().handle();
-        // An all-zero byte-pattern is a valid initial value for `VAImage`.
-        let mut image: bindings::VAImage = Default::default();
-
-        // Safe because `dpy` is a valid display handle.
-        va_check(unsafe {
-            bindings::vaCreateImage(
-                dpy,
-                &mut format,
-                coded_resolution.0 as i32,
-                coded_resolution.1 as i32,
-                &mut image,
-            )
-        })?;
-
-        // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
-        // `image` is a valid `VAImage`.
-        match va_check(unsafe {
-            bindings::vaGetImage(
-                dpy,
-                self.surface().id(),
-                0,
-                0,
-                coded_resolution.0,
-                coded_resolution.1,
-                image.image_id,
-            )
-        }) {
-            Ok(()) => Image::new(self, image, false, display_resolution),
-
-            Err(e) => {
-                // Safe because `image` is a valid `VAImage`.
-                unsafe {
-                    bindings::vaDestroyImage(dpy, image.image_id);
-                }
-
-                Err(e)
-            }
-        }
+        Image::create_from(self.surface(), format, coded_resolution, display_resolution)
     }
 }
 

@@ -2,14 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::borrow::Borrow;
 use std::rc::Rc;
 
 use crate::bindings;
-use crate::picture::Picture;
 use crate::va_check;
 use crate::Display;
-use crate::PictureReclaimableSurface;
 use crate::Surface;
 use crate::SurfaceMemoryDescriptor;
 use crate::VaError;
@@ -45,8 +42,8 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    pub(crate) fn new<T: Borrow<Surface<D>>, S: PictureReclaimableSurface>(
-        picture: &'a Picture<S, T>,
+    fn new(
+        surface: &'a Surface<D>,
         image: bindings::VAImage,
         derived: bool,
         display_resolution: (u32, u32),
@@ -56,7 +53,7 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
         // Safe since `picture.inner.context` represents a valid `VAContext` and `image` has been
         // successfully created at this point.
         match va_check(unsafe {
-            bindings::vaMapBuffer(picture.display().handle(), image.buf, &mut addr)
+            bindings::vaMapBuffer(surface.display().handle(), image.buf, &mut addr)
         }) {
             Ok(_) => {
                 // Assert that libva provided us with a coded resolution that is
@@ -70,20 +67,90 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
                 let data =
                     unsafe { std::slice::from_raw_parts_mut(addr as _, image.data_size as usize) };
                 Ok(Image {
-                    display: Rc::clone(picture.display()),
+                    display: Rc::clone(surface.display()),
                     image,
                     data,
                     derived,
                     display_resolution,
                     dirty: false,
-                    surface: picture.surface(),
+                    surface,
                 })
             }
             Err(e) => {
                 // Safe because `picture.inner.context` represents a valid `VAContext` and `image`
                 // represents a valid `VAImage`.
                 unsafe {
-                    bindings::vaDestroyImage(picture.display().handle(), image.image_id);
+                    bindings::vaDestroyImage(surface.display().handle(), image.image_id);
+                }
+
+                Err(e)
+            }
+        }
+    }
+
+    /// Create a new derived image from this `surface` using `vaDeriveImage`.
+    ///
+    /// Derived images are a direct view (i.e. without any copy) on the buffer content of
+    /// `surface`. On the other hand, not all `Surface`s can be derived.
+    pub fn derive_from(
+        surface: &'a Surface<D>,
+        display_resolution: (u32, u32),
+    ) -> Result<Self, VaError> {
+        // An all-zero byte-pattern is a valid initial value for `VAImage`.
+        let mut image: bindings::VAImage = Default::default();
+
+        // Safe because `self` has a valid display handle and ID.
+        va_check(unsafe {
+            bindings::vaDeriveImage(surface.display().handle(), surface.id(), &mut image)
+        })?;
+
+        Self::new(surface, image, true, display_resolution)
+    }
+
+    /// Create new image from `surface` using `vaCreateImage` and `vaGetImage`.
+    ///
+    /// The image will contain a copy of `surface`'s data' in the desired `format` and
+    /// `coded_resolution`.
+    pub fn create_from(
+        surface: &'a Surface<D>,
+        mut format: bindings::VAImageFormat,
+        coded_resolution: (u32, u32),
+        display_resolution: (u32, u32),
+    ) -> Result<Image<D>, VaError> {
+        // An all-zero byte-pattern is a valid initial value for `VAImage`.
+        let mut image: bindings::VAImage = Default::default();
+        let dpy = surface.display().handle();
+
+        // Safe because `dpy` is a valid display handle.
+        va_check(unsafe {
+            bindings::vaCreateImage(
+                dpy,
+                &mut format,
+                coded_resolution.0 as i32,
+                coded_resolution.1 as i32,
+                &mut image,
+            )
+        })?;
+
+        // Safe because `dpy` is a valid display handle, `picture.surface` is a valid VASurface and
+        // `image` is a valid `VAImage`.
+        match va_check(unsafe {
+            bindings::vaGetImage(
+                dpy,
+                surface.id(),
+                0,
+                0,
+                coded_resolution.0,
+                coded_resolution.1,
+                image.image_id,
+            )
+        }) {
+            Ok(()) => Self::new(surface, image, false, display_resolution),
+
+            Err(e) => {
+                // Safe because `image` is a valid `VAImage`.
+                unsafe {
+                    bindings::vaDestroyImage(dpy, image.image_id);
                 }
 
                 Err(e)
@@ -94,6 +161,11 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     /// Get a reference to the underlying `VAImage` that describes this image.
     pub fn image(&self) -> &bindings::VAImage {
         &self.image
+    }
+
+    /// Get a reference to the mapped `Surface`.
+    pub fn surface(&self) -> &Surface<D> {
+        self.surface
     }
 
     /// Returns whether this image is directly derived from its underlying `Picture`, as opposed to

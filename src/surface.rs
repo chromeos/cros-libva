@@ -227,6 +227,10 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         Ok(surfaces)
     }
 
+    pub(crate) fn display(&self) -> &Rc<Display> {
+        &self.display
+    }
+
     /// Wrapper around `vaSyncSurface` that blocks until all pending operations on the render
     /// target have been completed.
     ///
