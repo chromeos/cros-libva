@@ -92,10 +92,9 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     ///
     /// Derived images are a direct view (i.e. without any copy) on the buffer content of
     /// `surface`. On the other hand, not all `Surface`s can be derived.
-    pub fn derive_from(
-        surface: &'a Surface<D>,
-        display_resolution: (u32, u32),
-    ) -> Result<Self, VaError> {
+    ///
+    /// `visible_rect` is the visible rectangle inside `surface` that we want to access.
+    pub fn derive_from(surface: &'a Surface<D>, visible_rect: (u32, u32)) -> Result<Self, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
 
@@ -104,18 +103,21 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
             bindings::vaDeriveImage(surface.display().handle(), surface.id(), &mut image)
         })?;
 
-        Self::new(surface, image, true, display_resolution)
+        Self::new(surface, image, true, visible_rect)
     }
 
     /// Create new image from `surface` using `vaCreateImage` and `vaGetImage`.
     ///
+    /// `visible_rect` is the visible rectangle inside `surface` that we want to access.
+    ///
     /// The image will contain a copy of `surface`'s data' in the desired `format` and
-    /// `coded_resolution`.
+    /// `coded_resolution`, meaning the data can be scaled if `coded_resolution` and `visible_rect`
+    /// differ.
     pub fn create_from(
         surface: &'a Surface<D>,
         mut format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
-        display_resolution: (u32, u32),
+        visible_rect: (u32, u32),
     ) -> Result<Image<D>, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
@@ -145,7 +147,7 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
                 image.image_id,
             )
         }) {
-            Ok(()) => Self::new(surface, image, false, display_resolution),
+            Ok(()) => Self::new(surface, image, false, visible_rect),
 
             Err(e) => {
                 // Safe because `image` is a valid `VAImage`.

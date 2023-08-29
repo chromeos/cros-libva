@@ -279,12 +279,12 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
     /// `Picture`. On the other hand, not all `Pictures` can be derived.
     pub fn derive_image<D: SurfaceMemoryDescriptor>(
         &self,
-        display_resolution: (u32, u32),
+        visible_rect: (u32, u32),
     ) -> Result<Image<D>, VaError>
     where
         T: Borrow<Surface<D>>,
     {
-        Image::derive_from(self.surface(), display_resolution)
+        Image::derive_from(self.surface(), visible_rect)
     }
 
     /// Create new image from the `Picture` using `vaCreateImage` and `vaGetImage`.
@@ -294,12 +294,12 @@ impl<S: PictureReclaimableSurface, T> Picture<S, T> {
         &self,
         format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
-        display_resolution: (u32, u32),
+        visible_rect: (u32, u32),
     ) -> Result<Image<D>, VaError>
     where
         T: Borrow<Surface<D>>,
     {
-        Image::create_from(self.surface(), format, coded_resolution, display_resolution)
+        Image::create_from(self.surface(), format, coded_resolution, visible_rect)
     }
 }
 
