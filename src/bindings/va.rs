@@ -1501,6 +1501,27 @@ extern "C" {
         num_elements: ::std::os::raw::c_uint,
     ) -> VAStatus;
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VACodedBufferSegment {
+    pub size: u32,
+    pub bit_offset: u32,
+    pub status: u32,
+    pub reserved: u32,
+    pub buf: *mut ::std::os::raw::c_void,
+    pub next: *mut ::std::os::raw::c_void,
+    pub va_reserved: [u32; 4usize],
+}
+impl Default for _VACodedBufferSegment {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VACodedBufferSegment = _VACodedBufferSegment;
 extern "C" {
     pub fn vaMapBuffer(
         dpy: VADisplay,
