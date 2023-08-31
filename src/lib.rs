@@ -85,6 +85,7 @@ fn va_check(code: VAStatus) -> Result<(), VaError> {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write;
     use std::rc::Rc;
 
     use super::*;
@@ -275,5 +276,274 @@ mod tests {
             .unwrap();
 
         assert_eq!(crc_nv12_image(&image), 0xa5713e52);
+    }
+
+    #[test]
+    // Ignore this test by default as it requires libva-compatible hardware.
+    #[ignore]
+    fn enc_h264_demo() {
+        // Based on `gst-launch-1.0 videotestsrc num-buffers=1 ! video/x-raw,width=64,height=64,format=NV12 ! vaapih264enc ! filesink location=frame.h264`
+        // Frame created using `gst-launch-1.0 videotestsrc num-buffers=1 ! video/x-raw,width=64,height=64,format=NV12 ! filesink location=src/test_frame.nv12`
+        let raw_frame_nv12 = include_bytes!("test_frame.nv12");
+
+        let display = Display::open().unwrap();
+
+        let format = bindings::constants::VA_RT_FORMAT_YUV420;
+        let entrypoint = bindings::VAEntrypoint::VAEntrypointEncSliceLP;
+        let profile = bindings::VAProfile::VAProfileH264ConstrainedBaseline;
+        let width = 64u32;
+        let height = 64u32;
+
+        let mut attrs = vec![bindings::VAConfigAttrib {
+            type_: bindings::VAConfigAttribType::VAConfigAttribRTFormat,
+            value: 0,
+        }];
+
+        display
+            .get_config_attributes(profile, entrypoint, &mut attrs)
+            .unwrap();
+
+        let config = display.create_config(attrs, profile, entrypoint).unwrap();
+
+        let mut surfaces = display
+            .create_surfaces(
+                format,
+                None,
+                width,
+                height,
+                Some(UsageHint::USAGE_HINT_ENCODER),
+                vec![()],
+            )
+            .unwrap();
+
+        let context = display
+            .create_context(&config, width, height, Some(&surfaces), true)
+            .unwrap();
+
+        let seq_fields = H264EncSeqFields::new(
+            1, // 4:2:0
+            1, // Only frames
+            0, 0, 0, 1, 0, 2, 0,
+        );
+
+        let image_fmts = display.query_image_formats().unwrap();
+        let image_fmt = image_fmts
+            .into_iter()
+            .find(|f| f.fourcc == bindings::constants::VA_FOURCC_NV12)
+            .expect("No valid VAImageFormat found for NV12");
+
+        let surface = surfaces.pop().unwrap();
+        let surface_id = surface.id();
+
+        let coded_buffer = context.create_enc_coded(raw_frame_nv12.len()).unwrap();
+
+        let mut image =
+            Image::create_from(&surface, image_fmt, (width, height), (width, height)).unwrap();
+
+        let va_image = *image.image();
+        let dest = image.as_mut();
+        let data = &raw_frame_nv12[..];
+        let width = width as usize;
+        let height = height as usize;
+
+        let mut src = data;
+        let mut dst = &mut dest[va_image.offsets[0] as usize..];
+
+        // Copy luma
+        for _ in 0..height {
+            dst[..width].copy_from_slice(&src[..width]);
+            dst = &mut dst[va_image.pitches[0] as usize..];
+            src = &src[width..];
+        }
+
+        // Advance to the offset of the chroma plane
+        let mut src = &data[width * height..];
+        let mut dst = &mut dest[va_image.offsets[1] as usize..];
+
+        let height = height / 2;
+
+        // Copy chroma
+        for _ in 0..height {
+            dst[..width].copy_from_slice(&src[..width]);
+            dst = &mut dst[va_image.pitches[1] as usize..];
+            src = &src[width..];
+        }
+        drop(image);
+
+        let sps = BufferType::EncSequenceParameter(EncSequenceParameter::H264(
+            EncSequenceParameterBufferH264::new(
+                0,
+                10,
+                10,
+                30,
+                1,
+                0,
+                1,
+                (width / 16) as u16,  // width / 16
+                (height / 16) as u16, // height / 16
+                &seq_fields,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [0; 256],
+                None,
+                Some(H264VuiFields::new(1, 1, 0, 0, 0, 1, 0, 0)),
+                255,
+                1,
+                1,
+                1,
+                60,
+            ),
+        ));
+
+        let sps = context.create_buffer(sps).unwrap();
+
+        let ref_frames: [PictureH264; 16] = (0..16)
+            .map(|_| {
+                PictureH264::new(
+                    constants::VA_INVALID_ID,
+                    0,
+                    constants::VA_INVALID_SURFACE,
+                    0,
+                    0,
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| {
+                panic!();
+            });
+
+        let pps = BufferType::EncPictureParameter(EncPictureParameter::H264(
+            EncPictureParameterBufferH264::new(
+                PictureH264::new(surface_id, 0, 0, 0, 0),
+                ref_frames,
+                coded_buffer.id(),
+                0,
+                0,
+                0,
+                0,
+                26,
+                0,
+                0,
+                0,
+                0,
+                &H264EncPicFields::new(1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+            ),
+        ));
+
+        let pps = context.create_buffer(pps).unwrap();
+
+        let ref_pic_list_0: [PictureH264; 32] = (0..32)
+            .map(|_| {
+                PictureH264::new(
+                    constants::VA_INVALID_ID,
+                    0,
+                    constants::VA_INVALID_SURFACE,
+                    0,
+                    0,
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| {
+                panic!();
+            });
+
+        let ref_pic_list_1: [PictureH264; 32] = (0..32)
+            .map(|_| {
+                PictureH264::new(
+                    constants::VA_INVALID_ID,
+                    0,
+                    constants::VA_INVALID_SURFACE,
+                    0,
+                    0,
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| {
+                panic!();
+            });
+
+        let slice = BufferType::EncSliceParameter(EncSliceParameter::H264(
+            EncSliceParameterBufferH264::new(
+                0,
+                ((width / 16) * (height / 16)) as u32,
+                constants::VA_INVALID_ID,
+                2, // I
+                0,
+                1,
+                0,
+                0,
+                [0, 0],
+                1,
+                0,
+                0,
+                0,
+                ref_pic_list_0,
+                ref_pic_list_1,
+                0,
+                0,
+                0,
+                [0; 32],
+                [0; 32],
+                0,
+                [[0; 2]; 32],
+                [[0; 2]; 32],
+                0,
+                [0; 32],
+                [0; 32],
+                0,
+                [[0; 2]; 32],
+                [[0; 2]; 32],
+                0,
+                0,
+                0,
+                2,
+                2,
+            ),
+        ));
+
+        let slice = context.create_buffer(slice).unwrap();
+
+        let mut picture = Picture::new(0, Rc::clone(&context), surface);
+        picture.add_buffer(pps);
+        picture.add_buffer(sps);
+        picture.add_buffer(slice);
+
+        let picture = picture.begin().unwrap();
+        let picture = picture.render().unwrap();
+        let picture = picture.end().unwrap();
+        let _ = picture.sync().map_err(|(e, _)| e).unwrap();
+
+        let coded_buf = MappedCodedBuffer::new(&coded_buffer).unwrap();
+        assert_ne!(coded_buf.segments().len(), 0);
+
+        for segment in coded_buf.iter() {
+            assert_ne!(segment.buf.len(), 0);
+        }
+
+        const WRITE_TO_FILE: bool = false;
+        if WRITE_TO_FILE {
+            let raw_sps_bitstream: Vec<u8> = vec![
+                0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xc0, 0x0a, 0xab, 0x42, 0x12, 0x7f, 0xe0, 0x00,
+                0x20, 0x00, 0x22, 0x00, 0x00, 0x03, 0x00, 0x02, 0x00, 0x00, 0x03, 0x00, 0x79, 0x28,
+            ];
+
+            let raw_pps_bitstream: Vec<u8> = vec![0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x3c, 0x80];
+
+            let mut raw_file = std::fs::File::create("libva_utils_enc_h264_demo.h264").unwrap();
+            raw_file.write_all(&raw_sps_bitstream).unwrap();
+            raw_file.write_all(&raw_pps_bitstream).unwrap();
+
+            for segment in coded_buf.segments() {
+                raw_file.write_all(segment.buf).unwrap();
+            }
+
+            raw_file.flush().unwrap();
+        }
     }
 }
