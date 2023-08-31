@@ -179,6 +179,8 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
             },
+
+            BufferType::EncCodedBuffer(size) => (std::ptr::null_mut(), size),
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -243,6 +245,8 @@ pub enum BufferType {
     EncSliceParameter(EncSliceParameter),
     /// Abstraction over `VAEncMacroblockMapBufferType`. Needed for H264.
     EncMacroblockParameterBuffer(EncMacroblockParameterBuffer),
+    /// Abstraction over `VAEncCodedBufferType`. Needed for MPEG2, VP8, VP9, H264, HEVC.
+    EncCodedBuffer(usize),
 }
 
 impl BufferType {
@@ -270,6 +274,8 @@ impl BufferType {
             BufferType::EncMacroblockParameterBuffer(_) => {
                 bindings::VABufferType::VAEncMacroblockMapBufferType
             }
+
+            BufferType::EncCodedBuffer(_) => bindings::VABufferType::VAEncCodedBufferType,
         }
     }
 }
@@ -356,4 +362,88 @@ pub enum EncSliceParameter {
 pub enum EncMacroblockParameterBuffer {
     /// Abstraction over `VAEncMacroblockParameterBufferH264`
     H264(h264::EncMacroblockParameterBufferH264),
+}
+
+/// Wrapper type representing a buffer created with `vaCreateBuffer` with VAEncCodedBufferType.
+pub struct EncCodedBuffer(Buffer);
+
+impl EncCodedBuffer {
+    pub(crate) fn new(context: Rc<Context>, size: usize) -> Result<Self, VaError> {
+        Ok(Self(Buffer::new(
+            context,
+            BufferType::EncCodedBuffer(size),
+        )?))
+    }
+
+    /// Convenience function to return buffer's `VABufferID`.
+    pub fn id(&self) -> bindings::VABufferID {
+        self.0.id
+    }
+}
+
+/// Helper to access a single segment of mapped coded buffer
+pub struct MappedCodedSegment<'s> {
+    pub bit_offset: u32,
+    pub status: u32,
+    pub buf: &'s [u8],
+}
+
+/// Helper to access segments of mapped coded buffer
+pub struct MappedCodedBuffer<'p> {
+    segments: Vec<MappedCodedSegment<'p>>,
+    buffer: &'p EncCodedBuffer,
+}
+
+impl<'p> MappedCodedBuffer<'p> {
+    /// Map a 'VAEncCodedBufferType' buffer.
+    pub fn new(buffer: &'p EncCodedBuffer) -> Result<Self, VaError> {
+        let mut addr = std::ptr::null_mut();
+        let mut segments = Vec::new();
+
+        va_check(unsafe {
+            bindings::vaMapBuffer(buffer.0.context.display().handle(), buffer.id(), &mut addr)
+        })?;
+
+        while !addr.is_null() {
+            let segment: &bindings::VACodedBufferSegment =
+                unsafe { &*(addr as *const bindings::VACodedBufferSegment) };
+
+            let size = segment.size;
+            let buf = segment.buf;
+
+            let buf = unsafe { std::slice::from_raw_parts(buf as *mut u8, size as usize) };
+
+            segments.push(MappedCodedSegment {
+                bit_offset: segment.bit_offset,
+                status: segment.status,
+                buf,
+            });
+
+            addr = segment.next;
+        }
+
+        Ok(Self { segments, buffer })
+    }
+
+    /// Returns the iterator over segments
+    pub fn iter(&self) -> impl Iterator<Item = &MappedCodedSegment<'p>> {
+        self.segments.iter()
+    }
+
+    /// Returns the segments of mapped coded buffers.
+    pub fn segments(&self) -> &Vec<MappedCodedSegment<'p>> {
+        &self.segments
+    }
+}
+
+impl<'p> Drop for MappedCodedBuffer<'p> {
+    fn drop(&mut self) {
+        let status = va_check(unsafe {
+            bindings::vaUnmapBuffer(self.buffer.0.context.display().handle(), self.buffer.id())
+        });
+
+        if status.is_err() {
+            error!("vaUnmapBuffer failed: {}", status.unwrap_err());
+        }
+    }
 }
