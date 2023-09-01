@@ -15,12 +15,15 @@ use crate::VaError;
 ///
 /// An image is used to either get the surface data to client memory, or to copy image data in
 /// client memory to a surface.
-pub struct Image<'a, D: SurfaceMemoryDescriptor> {
+pub struct Image<'a> {
     /// The display from which the image was created, so we can unmap it upon destruction.
     display: Rc<Display>,
     /// The `VAImage` returned by libva.
     image: bindings::VAImage,
     /// The mapped surface data.
+    ///
+    /// The lifetime also allows us to ensure that the `Surface` we have been created from
+    /// does not drop or get changed while we exist.
     data: &'a mut [u8],
     /// Whether the image was derived using the `vaDeriveImage` API or created using the
     /// `vaCreateImage` API.
@@ -32,17 +35,15 @@ pub struct Image<'a, D: SurfaceMemoryDescriptor> {
     /// Tracks whether the underlying data has possibly been written to, i.e. an encoder will create
     /// an image and map its buffer in order to write to it, so we must writeback later.
     dirty: bool,
-    /// We need the surface to writeback the image. Also, from a logical POV,
-    /// the surface, which is the backing of the data, should not drop while we
-    /// live.
-    surface: &'a Surface<D>,
+    /// The ID of the `Surface` we have been created from.
+    surface_id: u32,
 }
 
-impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
+impl<'a> Image<'a> {
     /// Helper method to map a `VAImage` using `vaMapBuffer` and return an `Image`.
     ///
     /// Returns an error if the mapping failed.
-    fn new(
+    fn new<D: SurfaceMemoryDescriptor>(
         surface: &'a Surface<D>,
         image: bindings::VAImage,
         derived: bool,
@@ -73,7 +74,7 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
                     derived,
                     display_resolution,
                     dirty: false,
-                    surface,
+                    surface_id: surface.id(),
                 })
             }
             Err(e) => {
@@ -94,7 +95,10 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     /// `surface`. On the other hand, not all `Surface`s can be derived.
     ///
     /// `visible_rect` is the visible rectangle inside `surface` that we want to access.
-    pub fn derive_from(surface: &'a Surface<D>, visible_rect: (u32, u32)) -> Result<Self, VaError> {
+    pub fn derive_from<D: SurfaceMemoryDescriptor>(
+        surface: &'a Surface<D>,
+        visible_rect: (u32, u32),
+    ) -> Result<Self, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
 
@@ -113,12 +117,12 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     /// The image will contain a copy of `surface`'s data' in the desired `format` and
     /// `coded_resolution`, meaning the data can be scaled if `coded_resolution` and `visible_rect`
     /// differ.
-    pub fn create_from(
+    pub fn create_from<D: SurfaceMemoryDescriptor>(
         surface: &'a Surface<D>,
         mut format: bindings::VAImageFormat,
         coded_resolution: (u32, u32),
         visible_rect: (u32, u32),
-    ) -> Result<Image<D>, VaError> {
+    ) -> Result<Image, VaError> {
         // An all-zero byte-pattern is a valid initial value for `VAImage`.
         let mut image: bindings::VAImage = Default::default();
         let dpy = surface.display().handle();
@@ -165,11 +169,6 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
         &self.image
     }
 
-    /// Get a reference to the mapped `Surface`.
-    pub fn surface(&self) -> &Surface<D> {
-        self.surface
-    }
-
     /// Returns whether this image is directly derived from its underlying `Picture`, as opposed to
     /// being a view/copy of said `Picture` in a guaranteed pixel format.
     pub fn is_derived(&self) -> bool {
@@ -189,20 +188,20 @@ impl<'a, D: SurfaceMemoryDescriptor> Image<'a, D> {
     }
 }
 
-impl<'a, D: SurfaceMemoryDescriptor> AsRef<[u8]> for Image<'a, D> {
+impl<'a> AsRef<[u8]> for Image<'a> {
     fn as_ref(&self) -> &[u8] {
         self.data
     }
 }
 
-impl<'a, D: SurfaceMemoryDescriptor> AsMut<[u8]> for Image<'a, D> {
+impl<'a> AsMut<[u8]> for Image<'a> {
     fn as_mut(&mut self) -> &mut [u8] {
         self.dirty = true;
         self.data
     }
 }
 
-impl<'a, D: SurfaceMemoryDescriptor> Drop for Image<'a, D> {
+impl<'a> Drop for Image<'a> {
     fn drop(&mut self) {
         if !self.derived && self.dirty {
             // Safe because `picture.inner.context` represents a valid `VAContext`,
@@ -211,7 +210,7 @@ impl<'a, D: SurfaceMemoryDescriptor> Drop for Image<'a, D> {
             unsafe {
                 bindings::vaPutImage(
                     self.display.handle(),
-                    self.surface.id(),
+                    self.surface_id,
                     self.image.image_id,
                     0,
                     0,
