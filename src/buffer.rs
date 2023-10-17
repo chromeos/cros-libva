@@ -4,12 +4,14 @@
 
 //! Wrappers and helpers around `VABuffer`s.
 
+mod av1;
 mod h264;
 mod hevc;
 mod mpeg2;
 mod vp8;
 mod vp9;
 
+pub use av1::*;
 pub use h264::*;
 pub use hevc::*;
 pub use mpeg2::*;
@@ -67,6 +69,10 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                PictureParameter::AV1(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::SliceParameter(ref mut slice_param) => match slice_param {
@@ -91,6 +97,10 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
                 SliceParameter::HEVCRext(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                SliceParameter::AV1(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -296,6 +306,8 @@ pub enum PictureParameter {
     HEVCRext(hevc::PictureParameterBufferHEVCRext),
     /// Wrapper over VAPictureParameterBufferHEVCScc
     HEVCScc(hevc::PictureParameterBufferHEVCScc),
+    /// Wrapper over VADecPictureParameterBufferAV1
+    AV1(av1::PictureParameterBufferAV1),
 }
 
 /// Abstraction over the `SliceParameterBuffer` types we support
@@ -312,6 +324,8 @@ pub enum SliceParameter {
     HEVC(hevc::SliceParameterBufferHEVC),
     /// Wrapper over VASliceParameterBufferHEVCRext
     HEVCRext(hevc::SliceParameterBufferHEVCRext),
+    /// Wrapper over VASliceParameterBufferAV1
+    AV1(av1::SliceParameterBufferAV1),
 }
 
 /// Abstraction over the `IQMatrixBuffer` types we support.
