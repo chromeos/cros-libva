@@ -265,7 +265,7 @@ impl AV1LoopFilterFields {
         Self(bindings::_VADecPictureParameterBufferAV1__bindgen_ty_3 {
             bits: bindings::_VADecPictureParameterBufferAV1__bindgen_ty_3__bindgen_ty_1 {
                 _bitfield_align_1: Default::default(),
-                _bitfield_1: Default::default(),
+                _bitfield_1,
             },
         })
     }
