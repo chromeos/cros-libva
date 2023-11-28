@@ -5,10 +5,6 @@ within Rust code with minimal dependencies. It is developed for use in
 ChromeOS, but has no ChromeOS specifics or dependencies and should thus be
 usable anywhere.
 
-The first version was written by Daniel Almeida and hosted in the [crosvm
-repository](https://chromium.googlesource.com/crosvm/crosvm/) before being
-split out here.
-
 ## Dependencies
 
 The native [libva](https://github.com/intel/libva) library is required at link
@@ -74,3 +70,9 @@ MPEG2 decoding by running it:
 ```
 cargo test -- --ignored libva_utils_mpeg2vldemo
 ```
+
+## Credits
+
+The first version of this crate was written by Daniel Almeida and hosted in the
+[crosvm repository](https://chromium.googlesource.com/crosvm/crosvm/) before
+being split.
