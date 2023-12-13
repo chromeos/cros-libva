@@ -39,6 +39,15 @@ impl Buffer {
     pub(crate) fn new(context: Rc<Context>, mut type_: BufferType) -> Result<Self, VaError> {
         let mut buffer_id = 0;
 
+        /* we send all slices parameters as a single array in AV1 */
+        let nb_elements = match type_ {
+            BufferType::SliceParameter(ref mut slice_param) => match slice_param {
+                SliceParameter::AV1(params) => params.inner_mut().len(),
+                _ => 1,
+            },
+            _ => 1,
+        };
+
         let (ptr, size) = match type_ {
             BufferType::PictureParameter(ref mut picture_param) => match picture_param {
                 PictureParameter::MPEG2(ref mut wrapper) => (
@@ -101,8 +110,8 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
                 SliceParameter::AV1(ref mut wrapper) => (
-                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
-                    std::mem::size_of_val(wrapper.inner_mut()),
+                    wrapper.inner_mut().as_mut_ptr() as *mut std::ffi::c_void,
+                    std::mem::size_of::<bindings::VASliceParameterBufferAV1>(),
                 ),
             },
 
@@ -202,7 +211,7 @@ impl Buffer {
                 context.id(),
                 type_.inner(),
                 size as u32,
-                1,
+                nb_elements as u32,
                 ptr,
                 &mut buffer_id,
             )
