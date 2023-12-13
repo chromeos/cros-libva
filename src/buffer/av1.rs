@@ -516,13 +516,21 @@ impl PictureParameterBufferAV1 {
     }
 }
 
-/// A wrapper over `VASliceParameterBufferAV1` FFI type
-pub struct SliceParameterBufferAV1(Box<bindings::VASliceParameterBufferAV1>);
+/// A wrapper over an array of the `VASliceParameterBufferAV1` FFI type. This
+/// allows for passing all tile parameters in a single call if multiple tiles
+/// are present in the tile group.
+pub struct SliceParameterBufferAV1(Vec<bindings::VASliceParameterBufferAV1>);
 
 impl SliceParameterBufferAV1 {
     /// Creates the wrapper
+    pub fn new() -> Self {
+        Self(Default::default())
+    }
+
+    /// Adds a slice parameter to the wrapper
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub fn add_slice_parameter(
+        &mut self,
         slice_data_size: u32,
         slice_data_offset: u32,
         slice_data_flag: u32,
@@ -532,8 +540,8 @@ impl SliceParameterBufferAV1 {
         tg_end: u16,
         anchor_frame_idx: u8,
         tile_idx_in_tile_list: u16,
-    ) -> Self {
-        Self(Box::new(bindings::VASliceParameterBufferAV1 {
+    ) {
+        self.0.push(bindings::VASliceParameterBufferAV1 {
             slice_data_size,
             slice_data_offset,
             slice_data_flag,
@@ -544,10 +552,10 @@ impl SliceParameterBufferAV1 {
             anchor_frame_idx,
             tile_idx_in_tile_list,
             va_reserved: Default::default(),
-        }))
+        });
     }
 
-    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VASliceParameterBufferAV1 {
+    pub(crate) fn inner_mut(&mut self) -> &mut Vec<bindings::VASliceParameterBufferAV1> {
         self.0.as_mut()
     }
 }
