@@ -13,7 +13,7 @@ bindgen \
     --no-layout-tests \
     --constified-enum-module "VA.*" \
     --allowlist-function "va.*" \
-    --allowlist-type ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|VACodedBufferSegment|.*AV1.*" \
+    --allowlist-type ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|VACodedBufferSegment|.*AV1.*|VAEncMisc.*" \
     "libva-wrapper.h" \
     > src/bindings/va.rs
 

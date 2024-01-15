@@ -82,11 +82,50 @@ where
         }
     }
 }
+#[repr(C)]
+#[derive(Default)]
+pub struct __IncompleteArrayField<T>(::std::marker::PhantomData<T>, [T; 0]);
+impl<T> __IncompleteArrayField<T> {
+    #[inline]
+    pub const fn new() -> Self {
+        __IncompleteArrayField(::std::marker::PhantomData, [])
+    }
+    #[inline]
+    pub fn as_ptr(&self) -> *const T {
+        self as *const _ as *const T
+    }
+    #[inline]
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self as *mut _ as *mut T
+    }
+    #[inline]
+    pub unsafe fn as_slice(&self, len: usize) -> &[T] {
+        ::std::slice::from_raw_parts(self.as_ptr(), len)
+    }
+    #[inline]
+    pub unsafe fn as_mut_slice(&mut self, len: usize) -> &mut [T] {
+        ::std::slice::from_raw_parts_mut(self.as_mut_ptr(), len)
+    }
+}
+impl<T> ::std::fmt::Debug for __IncompleteArrayField<T> {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.write_str("__IncompleteArrayField")
+    }
+}
 pub type VADisplay = *mut ::std::os::raw::c_void;
 pub type VAStatus = ::std::os::raw::c_int;
 extern "C" {
     pub fn vaErrorStr(error_status: VAStatus) -> *const ::std::os::raw::c_char;
 }
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VARectangle {
+    pub x: i16,
+    pub y: i16,
+    pub width: u16,
+    pub height: u16,
+}
+pub type VARectangle = _VARectangle;
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct _VAMotionVector {
@@ -176,6 +215,7 @@ pub mod VAProfile {
     pub const VAProfileAV1Profile1: Type = 33;
     pub const VAProfileHEVCSccMain444_10: Type = 34;
     pub const VAProfileProtected: Type = 35;
+    pub const VAProfileH264High10: Type = 36;
 }
 pub mod VAEntrypoint {
     pub type Type = ::std::os::raw::c_uint;
@@ -589,6 +629,1193 @@ extern "C" {
         processing_rate: *mut ::std::os::raw::c_uint,
     ) -> VAStatus;
 }
+pub mod VAEncMiscParameterType {
+    pub type Type = ::std::os::raw::c_uint;
+    pub const VAEncMiscParameterTypeFrameRate: Type = 0;
+    pub const VAEncMiscParameterTypeRateControl: Type = 1;
+    pub const VAEncMiscParameterTypeMaxSliceSize: Type = 2;
+    pub const VAEncMiscParameterTypeAIR: Type = 3;
+    pub const VAEncMiscParameterTypeMaxFrameSize: Type = 4;
+    pub const VAEncMiscParameterTypeHRD: Type = 5;
+    pub const VAEncMiscParameterTypeQualityLevel: Type = 6;
+    pub const VAEncMiscParameterTypeRIR: Type = 7;
+    pub const VAEncMiscParameterTypeQuantization: Type = 8;
+    pub const VAEncMiscParameterTypeSkipFrame: Type = 9;
+    pub const VAEncMiscParameterTypeROI: Type = 10;
+    pub const VAEncMiscParameterTypeMultiPassFrameSize: Type = 11;
+    pub const VAEncMiscParameterTypeTemporalLayerStructure: Type = 12;
+    pub const VAEncMiscParameterTypeDirtyRect: Type = 13;
+    pub const VAEncMiscParameterTypeParallelBRC: Type = 14;
+    pub const VAEncMiscParameterTypeSubMbPartPel: Type = 15;
+    pub const VAEncMiscParameterTypeEncQuality: Type = 16;
+    pub const VAEncMiscParameterTypeCustomRoundingControl: Type = 17;
+    pub const VAEncMiscParameterTypeFEIFrameControl: Type = 18;
+    pub const VAEncMiscParameterTypeExtensionData: Type = 19;
+}
+#[repr(C)]
+#[derive(Debug)]
+pub struct _VAEncMiscParameterBuffer {
+    pub type_: VAEncMiscParameterType::Type,
+    pub data: __IncompleteArrayField<u32>,
+}
+impl Default for _VAEncMiscParameterBuffer {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterBuffer = _VAEncMiscParameterBuffer;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterTemporalLayerStructure {
+    pub number_of_layers: u32,
+    pub periodicity: u32,
+    pub layer_id: [u32; 32usize],
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterTemporalLayerStructure = _VAEncMiscParameterTemporalLayerStructure;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterRateControl {
+    pub bits_per_second: u32,
+    pub target_percentage: u32,
+    pub window_size: u32,
+    pub initial_qp: u32,
+    pub min_qp: u32,
+    pub basic_unit_size: u32,
+    pub rc_flags: _VAEncMiscParameterRateControl__bindgen_ty_1,
+    pub ICQ_quality_factor: u32,
+    pub max_qp: u32,
+    pub quality_factor: u32,
+    pub target_frame_size: u32,
+    pub va_reserved: [u32; 4usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterRateControl__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterRateControl__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterRateControl__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u16; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterRateControl__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn reset(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reset(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn disable_frame_skip(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_disable_frame_skip(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn disable_bit_stuffing(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_disable_bit_stuffing(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn mb_rate_control(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 4u8) as u32) }
+    }
+    #[inline]
+    pub fn set_mb_rate_control(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(3usize, 4u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn temporal_id(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(7usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_temporal_id(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(7usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn cfs_I_frames(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(15usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_cfs_I_frames(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(15usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_parallel_brc(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(16usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_parallel_brc(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(16usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_dynamic_scaling(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(17usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_dynamic_scaling(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(17usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn frame_tolerance_mode(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(18usize, 2u8) as u32) }
+    }
+    #[inline]
+    pub fn set_frame_tolerance_mode(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(18usize, 2u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(20usize, 12u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(20usize, 12u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        reset: u32,
+        disable_frame_skip: u32,
+        disable_bit_stuffing: u32,
+        mb_rate_control: u32,
+        temporal_id: u32,
+        cfs_I_frames: u32,
+        enable_parallel_brc: u32,
+        enable_dynamic_scaling: u32,
+        frame_tolerance_mode: u32,
+        reserved: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let reset: u32 = unsafe { ::std::mem::transmute(reset) };
+            reset as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let disable_frame_skip: u32 = unsafe { ::std::mem::transmute(disable_frame_skip) };
+            disable_frame_skip as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let disable_bit_stuffing: u32 = unsafe { ::std::mem::transmute(disable_bit_stuffing) };
+            disable_bit_stuffing as u64
+        });
+        __bindgen_bitfield_unit.set(3usize, 4u8, {
+            let mb_rate_control: u32 = unsafe { ::std::mem::transmute(mb_rate_control) };
+            mb_rate_control as u64
+        });
+        __bindgen_bitfield_unit.set(7usize, 8u8, {
+            let temporal_id: u32 = unsafe { ::std::mem::transmute(temporal_id) };
+            temporal_id as u64
+        });
+        __bindgen_bitfield_unit.set(15usize, 1u8, {
+            let cfs_I_frames: u32 = unsafe { ::std::mem::transmute(cfs_I_frames) };
+            cfs_I_frames as u64
+        });
+        __bindgen_bitfield_unit.set(16usize, 1u8, {
+            let enable_parallel_brc: u32 = unsafe { ::std::mem::transmute(enable_parallel_brc) };
+            enable_parallel_brc as u64
+        });
+        __bindgen_bitfield_unit.set(17usize, 1u8, {
+            let enable_dynamic_scaling: u32 =
+                unsafe { ::std::mem::transmute(enable_dynamic_scaling) };
+            enable_dynamic_scaling as u64
+        });
+        __bindgen_bitfield_unit.set(18usize, 2u8, {
+            let frame_tolerance_mode: u32 = unsafe { ::std::mem::transmute(frame_tolerance_mode) };
+            frame_tolerance_mode as u64
+        });
+        __bindgen_bitfield_unit.set(20usize, 12u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterRateControl__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterRateControl {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterRateControl = _VAEncMiscParameterRateControl;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterFrameRate {
+    pub framerate: u32,
+    pub framerate_flags: _VAEncMiscParameterFrameRate__bindgen_ty_1,
+    pub va_reserved: [u32; 4usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterFrameRate__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterFrameRate__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterFrameRate__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u32; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterFrameRate__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn temporal_id(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_temporal_id(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 24u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(8usize, 24u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(temporal_id: u32, reserved: u32) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let temporal_id: u32 = unsafe { ::std::mem::transmute(temporal_id) };
+            temporal_id as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 24u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterFrameRate__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterFrameRate {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterFrameRate = _VAEncMiscParameterFrameRate;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterMaxSliceSize {
+    pub max_slice_size: u32,
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterMaxSliceSize = _VAEncMiscParameterMaxSliceSize;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterAIR {
+    pub air_num_mbs: u32,
+    pub air_threshold: u32,
+    pub air_auto: u32,
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterAIR = _VAEncMiscParameterAIR;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterRIR {
+    pub rir_flags: _VAEncMiscParameterRIR__bindgen_ty_1,
+    pub intra_insertion_location: u16,
+    pub intra_insert_size: u16,
+    pub qp_delta_for_inserted_intra: u8,
+    pub va_reserved: [u32; 4usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterRIR__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterRIR__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterRIR__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u32; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterRIR__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn enable_rir_column(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_rir_column(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_rir_row(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_rir_row(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 30u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 30u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        enable_rir_column: u32,
+        enable_rir_row: u32,
+        reserved: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let enable_rir_column: u32 = unsafe { ::std::mem::transmute(enable_rir_column) };
+            enable_rir_column as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let enable_rir_row: u32 = unsafe { ::std::mem::transmute(enable_rir_row) };
+            enable_rir_row as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 30u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterRIR__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterRIR {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterRIR = _VAEncMiscParameterRIR;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterHRD {
+    pub initial_buffer_fullness: u32,
+    pub buffer_size: u32,
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterHRD = _VAEncMiscParameterHRD;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterBufferMaxFrameSize {
+    pub type_: VAEncMiscParameterType::Type,
+    pub max_frame_size: u32,
+    pub va_reserved: [u32; 4usize],
+}
+impl Default for _VAEncMiscParameterBufferMaxFrameSize {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterBufferMaxFrameSize = _VAEncMiscParameterBufferMaxFrameSize;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterBufferMultiPassFrameSize {
+    pub type_: VAEncMiscParameterType::Type,
+    pub max_frame_size: u32,
+    pub reserved: u32,
+    pub num_passes: u8,
+    pub delta_qp: *mut u8,
+    pub va_reserved: [::std::os::raw::c_ulong; 4usize],
+}
+impl Default for _VAEncMiscParameterBufferMultiPassFrameSize {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterBufferMultiPassFrameSize = _VAEncMiscParameterBufferMultiPassFrameSize;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterBufferQualityLevel {
+    pub quality_level: u32,
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterBufferQualityLevel = _VAEncMiscParameterBufferQualityLevel;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterQuantization {
+    pub quantization_flags: _VAEncMiscParameterQuantization__bindgen_ty_1,
+    pub va_reserved: u32,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterQuantization__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterQuantization__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterQuantization__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u32; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterQuantization__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn disable_trellis(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_disable_trellis(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_trellis_I(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_trellis_I(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_trellis_P(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_trellis_P(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_trellis_B(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_trellis_B(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(3usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 28u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(4usize, 28u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        disable_trellis: u32,
+        enable_trellis_I: u32,
+        enable_trellis_P: u32,
+        enable_trellis_B: u32,
+        reserved: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let disable_trellis: u32 = unsafe { ::std::mem::transmute(disable_trellis) };
+            disable_trellis as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let enable_trellis_I: u32 = unsafe { ::std::mem::transmute(enable_trellis_I) };
+            enable_trellis_I as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let enable_trellis_P: u32 = unsafe { ::std::mem::transmute(enable_trellis_P) };
+            enable_trellis_P as u64
+        });
+        __bindgen_bitfield_unit.set(3usize, 1u8, {
+            let enable_trellis_B: u32 = unsafe { ::std::mem::transmute(enable_trellis_B) };
+            enable_trellis_B as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 28u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterQuantization__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterQuantization {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterQuantization = _VAEncMiscParameterQuantization;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterSkipFrame {
+    pub skip_frame_flag: u8,
+    pub num_skip_frames: u8,
+    pub size_skip_frames: u32,
+    pub va_reserved: [u32; 4usize],
+}
+pub type VAEncMiscParameterSkipFrame = _VAEncMiscParameterSkipFrame;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncROI {
+    pub roi_rectangle: VARectangle,
+    pub roi_value: i8,
+}
+pub type VAEncROI = _VAEncROI;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterBufferROI {
+    pub num_roi: u32,
+    pub max_delta_qp: i8,
+    pub min_delta_qp: i8,
+    pub roi: *mut VAEncROI,
+    pub roi_flags: _VAEncMiscParameterBufferROI__bindgen_ty_1,
+    pub va_reserved: [u32; 4usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterBufferROI__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterBufferROI__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterBufferROI__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u32; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterBufferROI__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn roi_value_is_qp_delta(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_roi_value_is_qp_delta(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 31u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 31u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        roi_value_is_qp_delta: u32,
+        reserved: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let roi_value_is_qp_delta: u32 =
+                unsafe { ::std::mem::transmute(roi_value_is_qp_delta) };
+            roi_value_is_qp_delta as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 31u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterBufferROI__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterBufferROI {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterBufferROI = _VAEncMiscParameterBufferROI;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterBufferDirtyRect {
+    pub num_roi_rectangle: u32,
+    pub roi_rectangle: *mut VARectangle,
+}
+impl Default for _VAEncMiscParameterBufferDirtyRect {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterBufferDirtyRect = _VAEncMiscParameterBufferDirtyRect;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterParallelRateControl {
+    pub num_layers: u32,
+    pub num_b_in_gop: *mut u32,
+}
+impl Default for _VAEncMiscParameterParallelRateControl {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterParallelRateControl = _VAEncMiscParameterParallelRateControl;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterEncQuality {
+    pub __bindgen_anon_1: _VAEncMiscParameterEncQuality__bindgen_ty_1,
+    pub FTQSkipThresholdLUT: [u8; 52usize],
+    pub NonFTQSkipThresholdLUT: [u16; 52usize],
+    pub reserved: [u32; 16usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterEncQuality__bindgen_ty_1 {
+    pub __bindgen_anon_1: _VAEncMiscParameterEncQuality__bindgen_ty_1__bindgen_ty_1,
+    pub encControls: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterEncQuality__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 3usize]>,
+    pub __bindgen_padding_0: u8,
+}
+impl _VAEncMiscParameterEncQuality__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn useRawPicForRef(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_useRawPicForRef(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn skipCheckDisable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_skipCheckDisable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn FTQOverride(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_FTQOverride(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn FTQEnable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_FTQEnable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(3usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn FTQSkipThresholdLUTInput(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_FTQSkipThresholdLUTInput(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(4usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn NonFTQSkipThresholdLUTInput(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_NonFTQSkipThresholdLUTInput(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(5usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn ReservedBit(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_ReservedBit(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(6usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn directBiasAdjustmentEnable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(7usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_directBiasAdjustmentEnable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(7usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn globalMotionBiasAdjustmentEnable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_globalMotionBiasAdjustmentEnable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(8usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn HMEMVCostScalingFactor(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 2u8) as u32) }
+    }
+    #[inline]
+    pub fn set_HMEMVCostScalingFactor(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(9usize, 2u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn HMEDisable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_HMEDisable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(11usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn SuperHMEDisable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_SuperHMEDisable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(12usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn UltraHMEDisable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_UltraHMEDisable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(13usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn PanicModeDisable(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_PanicModeDisable(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(14usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn ForceRepartitionCheck(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(15usize, 2u8) as u32) }
+    }
+    #[inline]
+    pub fn set_ForceRepartitionCheck(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(15usize, 2u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        useRawPicForRef: u32,
+        skipCheckDisable: u32,
+        FTQOverride: u32,
+        FTQEnable: u32,
+        FTQSkipThresholdLUTInput: u32,
+        NonFTQSkipThresholdLUTInput: u32,
+        ReservedBit: u32,
+        directBiasAdjustmentEnable: u32,
+        globalMotionBiasAdjustmentEnable: u32,
+        HMEMVCostScalingFactor: u32,
+        HMEDisable: u32,
+        SuperHMEDisable: u32,
+        UltraHMEDisable: u32,
+        PanicModeDisable: u32,
+        ForceRepartitionCheck: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 3usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 3usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let useRawPicForRef: u32 = unsafe { ::std::mem::transmute(useRawPicForRef) };
+            useRawPicForRef as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let skipCheckDisable: u32 = unsafe { ::std::mem::transmute(skipCheckDisable) };
+            skipCheckDisable as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let FTQOverride: u32 = unsafe { ::std::mem::transmute(FTQOverride) };
+            FTQOverride as u64
+        });
+        __bindgen_bitfield_unit.set(3usize, 1u8, {
+            let FTQEnable: u32 = unsafe { ::std::mem::transmute(FTQEnable) };
+            FTQEnable as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 1u8, {
+            let FTQSkipThresholdLUTInput: u32 =
+                unsafe { ::std::mem::transmute(FTQSkipThresholdLUTInput) };
+            FTQSkipThresholdLUTInput as u64
+        });
+        __bindgen_bitfield_unit.set(5usize, 1u8, {
+            let NonFTQSkipThresholdLUTInput: u32 =
+                unsafe { ::std::mem::transmute(NonFTQSkipThresholdLUTInput) };
+            NonFTQSkipThresholdLUTInput as u64
+        });
+        __bindgen_bitfield_unit.set(6usize, 1u8, {
+            let ReservedBit: u32 = unsafe { ::std::mem::transmute(ReservedBit) };
+            ReservedBit as u64
+        });
+        __bindgen_bitfield_unit.set(7usize, 1u8, {
+            let directBiasAdjustmentEnable: u32 =
+                unsafe { ::std::mem::transmute(directBiasAdjustmentEnable) };
+            directBiasAdjustmentEnable as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 1u8, {
+            let globalMotionBiasAdjustmentEnable: u32 =
+                unsafe { ::std::mem::transmute(globalMotionBiasAdjustmentEnable) };
+            globalMotionBiasAdjustmentEnable as u64
+        });
+        __bindgen_bitfield_unit.set(9usize, 2u8, {
+            let HMEMVCostScalingFactor: u32 =
+                unsafe { ::std::mem::transmute(HMEMVCostScalingFactor) };
+            HMEMVCostScalingFactor as u64
+        });
+        __bindgen_bitfield_unit.set(11usize, 1u8, {
+            let HMEDisable: u32 = unsafe { ::std::mem::transmute(HMEDisable) };
+            HMEDisable as u64
+        });
+        __bindgen_bitfield_unit.set(12usize, 1u8, {
+            let SuperHMEDisable: u32 = unsafe { ::std::mem::transmute(SuperHMEDisable) };
+            SuperHMEDisable as u64
+        });
+        __bindgen_bitfield_unit.set(13usize, 1u8, {
+            let UltraHMEDisable: u32 = unsafe { ::std::mem::transmute(UltraHMEDisable) };
+            UltraHMEDisable as u64
+        });
+        __bindgen_bitfield_unit.set(14usize, 1u8, {
+            let PanicModeDisable: u32 = unsafe { ::std::mem::transmute(PanicModeDisable) };
+            PanicModeDisable as u64
+        });
+        __bindgen_bitfield_unit.set(15usize, 2u8, {
+            let ForceRepartitionCheck: u32 =
+                unsafe { ::std::mem::transmute(ForceRepartitionCheck) };
+            ForceRepartitionCheck as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterEncQuality__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterEncQuality {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterEncQuality = _VAEncMiscParameterEncQuality;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _VAEncMiscParameterCustomRoundingControl {
+    pub rounding_offset_setting: _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1 {
+    pub bits: _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1__bindgen_ty_1,
+    pub value: u32,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1__bindgen_ty_1 {
+    pub _bitfield_align_1: [u16; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 4usize]>,
+}
+impl _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1__bindgen_ty_1 {
+    #[inline]
+    pub fn enable_custom_rouding_intra(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_custom_rouding_intra(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn rounding_offset_intra(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 7u8) as u32) }
+    }
+    #[inline]
+    pub fn set_rounding_offset_intra(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 7u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn enable_custom_rounding_inter(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_enable_custom_rounding_inter(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(8usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn rounding_offset_inter(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 7u8) as u32) }
+    }
+    #[inline]
+    pub fn set_rounding_offset_inter(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(9usize, 7u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn reserved(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(16usize, 16u8) as u32) }
+    }
+    #[inline]
+    pub fn set_reserved(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(16usize, 16u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        enable_custom_rouding_intra: u32,
+        rounding_offset_intra: u32,
+        enable_custom_rounding_inter: u32,
+        rounding_offset_inter: u32,
+        reserved: u32,
+    ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let enable_custom_rouding_intra: u32 =
+                unsafe { ::std::mem::transmute(enable_custom_rouding_intra) };
+            enable_custom_rouding_intra as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 7u8, {
+            let rounding_offset_intra: u32 =
+                unsafe { ::std::mem::transmute(rounding_offset_intra) };
+            rounding_offset_intra as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 1u8, {
+            let enable_custom_rounding_inter: u32 =
+                unsafe { ::std::mem::transmute(enable_custom_rounding_inter) };
+            enable_custom_rounding_inter as u64
+        });
+        __bindgen_bitfield_unit.set(9usize, 7u8, {
+            let rounding_offset_inter: u32 =
+                unsafe { ::std::mem::transmute(rounding_offset_inter) };
+            rounding_offset_inter as u64
+        });
+        __bindgen_bitfield_unit.set(16usize, 16u8, {
+            let reserved: u32 = unsafe { ::std::mem::transmute(reserved) };
+            reserved as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+impl Default for _VAEncMiscParameterCustomRoundingControl__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for _VAEncMiscParameterCustomRoundingControl {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VAEncMiscParameterCustomRoundingControl = _VAEncMiscParameterCustomRoundingControl;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct _VAPictureParameterBufferMPEG2 {
@@ -12286,14 +13513,25 @@ impl _VAEncSequenceParameterBufferAV1__bindgen_ty_1__bindgen_ty_1 {
         }
     }
     #[inline]
+    pub fn mono_chrome(&self) -> u32 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(19usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_mono_chrome(&mut self, val: u32) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(19usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
     pub fn reserved_bits(&self) -> u32 {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(19usize, 13u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(20usize, 12u8) as u32) }
     }
     #[inline]
     pub fn set_reserved_bits(&mut self, val: u32) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(19usize, 13u8, val as u64)
+            self._bitfield_1.set(20usize, 12u8, val as u64)
         }
     }
     #[inline]
@@ -12315,6 +13553,7 @@ impl _VAEncSequenceParameterBufferAV1__bindgen_ty_1__bindgen_ty_1 {
         bit_depth_minus8: u32,
         subsampling_x: u32,
         subsampling_y: u32,
+        mono_chrome: u32,
         reserved_bits: u32,
     ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
         let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
@@ -12390,7 +13629,11 @@ impl _VAEncSequenceParameterBufferAV1__bindgen_ty_1__bindgen_ty_1 {
             let subsampling_y: u32 = unsafe { ::std::mem::transmute(subsampling_y) };
             subsampling_y as u64
         });
-        __bindgen_bitfield_unit.set(19usize, 13u8, {
+        __bindgen_bitfield_unit.set(19usize, 1u8, {
+            let mono_chrome: u32 = unsafe { ::std::mem::transmute(mono_chrome) };
+            mono_chrome as u64
+        });
+        __bindgen_bitfield_unit.set(20usize, 12u8, {
             let reserved_bits: u32 = unsafe { ::std::mem::transmute(reserved_bits) };
             reserved_bits as u64
         });

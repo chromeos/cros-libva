@@ -5,6 +5,7 @@
 //! Wrappers and helpers around `VABuffer`s.
 
 mod av1;
+mod enc_misc;
 mod h264;
 mod hevc;
 mod mpeg2;
@@ -12,6 +13,7 @@ mod vp8;
 mod vp9;
 
 pub use av1::*;
+pub use enc_misc::*;
 pub use h264::*;
 pub use hevc::*;
 pub use mpeg2::*;
@@ -200,6 +202,41 @@ impl Buffer {
             },
 
             BufferType::EncCodedBuffer(size) => (std::ptr::null_mut(), size),
+
+            BufferType::EncMiscParameter(ref mut enc_misc_param) => match enc_misc_param {
+                EncMiscParameter::FrameRate(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::RateControl(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::MaxSliceSize(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::MaxFrameSize(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::SkipFrame(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::HRD(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::QualityLevel(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncMiscParameter::Quantization(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -266,6 +303,8 @@ pub enum BufferType {
     EncMacroblockParameterBuffer(EncMacroblockParameterBuffer),
     /// Abstraction over `VAEncCodedBufferType`. Needed for MPEG2, VP8, VP9, H264, HEVC.
     EncCodedBuffer(usize),
+    /// Abstraction over `VAEncMiscParameterBuffer`.
+    EncMiscParameter(EncMiscParameter),
 }
 
 impl BufferType {
@@ -295,6 +334,8 @@ impl BufferType {
             }
 
             BufferType::EncCodedBuffer(_) => bindings::VABufferType::VAEncCodedBufferType,
+
+            BufferType::EncMiscParameter(_) => bindings::VABufferType::VAEncMiscParameterBufferType,
         }
     }
 }
@@ -469,4 +510,24 @@ impl<'p> Drop for MappedCodedBuffer<'p> {
             error!("vaUnmapBuffer failed: {}", status.unwrap_err());
         }
     }
+}
+
+/// Abstraction over the `EncMiscParameterBuffer` types we support.
+pub enum EncMiscParameter {
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterFrameRate`.
+    FrameRate(EncMiscParameterFrameRate),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterRateControl`.
+    RateControl(EncMiscParameterRateControl),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterMaxSliceSize`.
+    MaxSliceSize(EncMiscParameterMaxSliceSize),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterBufferMaxFrameSize`.
+    MaxFrameSize(EncMiscParameterBufferMaxFrameSize),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterSkipFrame`.
+    SkipFrame(EncMiscParameterSkipFrame),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterHRD`.
+    HRD(EncMiscParameterHRD),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterBufferQualityLevel`.
+    QualityLevel(EncMiscParameterBufferQualityLevel),
+    /// Wrapper over `VAEncMiscParameterBuffer` with `VAEncMiscParameterQuantization`.
+    Quantization(EncMiscParameterQuantization),
 }
