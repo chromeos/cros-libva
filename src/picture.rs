@@ -126,13 +126,10 @@ impl<T> Picture<PictureNew, T> {
         }
     }
 
-    /// Creates a new Picture with a given `frame_number` to identify it,
+    /// Creates a new Picture with a given `timestamp` to identify it,
     /// reusing the Surface from `picture`. This is useful for interlaced
     /// decoding as one can render both fields to the same underlying surface.
-    pub fn new_from_same_surface<S: PictureReclaimableSurface>(
-        timestamp: u64,
-        picture: &Picture<S, T>,
-    ) -> Self {
+    pub fn new_from_same_surface<S: PictureState>(timestamp: u64, picture: &Picture<S, T>) -> Self {
         let context = Rc::clone(&picture.inner.context);
         Picture {
             inner: Box::new(PictureInner {
