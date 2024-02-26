@@ -95,6 +95,30 @@ where
     }
 }
 
+/// Decode error type aka `VADecodeErrorType`
+#[repr(u32)]
+#[derive(Debug)]
+pub enum DecodeErrorType {
+    SliceMissing = bindings::VADecodeErrorType::VADecodeSliceMissing,
+    MBError = bindings::VADecodeErrorType::VADecodeMBError,
+    Reset = bindings::VADecodeErrorType::VADecodeReset,
+}
+
+/// Decode error details extracted from `VASurfaceDecodeMBErrors`, result of vaQuerySurfaceError.
+#[derive(Debug)]
+pub struct SurfaceDecodeMBError {
+    /// Start mb address with errors
+    pub start_mb: u32,
+
+    /// End mb address with errors
+    pub end_mb: u32,
+
+    pub decode_error_type: DecodeErrorType,
+
+    /// Number of mbs with errors
+    pub num_mb: u32,
+}
+
 /// An owned VA surface that is tied to a particular `Display`.
 pub struct Surface<D: SurfaceMemoryDescriptor> {
     display: Rc<Display>,
@@ -256,6 +280,58 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         })?;
 
         Ok(status)
+    }
+
+    pub fn query_error(&self) -> Result<Vec<SurfaceDecodeMBError>, VaError> {
+        let mut raw: *const bindings::VASurfaceDecodeMBErrors = std::ptr::null();
+
+        // Safe because `self` represents a valid VASurface.
+        va_check(unsafe {
+            bindings::vaQuerySurfaceError(
+                self.display.handle(),
+                self.id,
+                bindings::constants::VA_STATUS_ERROR_DECODING_ERROR as i32,
+                (&mut raw) as *mut _ as *mut _,
+            )
+        })?;
+
+        let mut errors = vec![];
+
+        while !raw.is_null() {
+            // Safe because raw is a valid pointer
+            let error = unsafe { *raw };
+            if error.status == -1 {
+                break;
+            }
+
+            let type_ = match error.decode_error_type {
+                bindings::VADecodeErrorType::VADecodeSliceMissing => DecodeErrorType::SliceMissing,
+                bindings::VADecodeErrorType::VADecodeMBError => DecodeErrorType::MBError,
+                bindings::VADecodeErrorType::VADecodeReset => DecodeErrorType::Reset,
+                _ => {
+                    log::warn!(
+                        "Unrecognized `decode_error_type` value ({})",
+                        error.decode_error_type
+                    );
+
+                    // Safe because status != -1
+                    raw = unsafe { raw.offset(1) };
+                    continue;
+                }
+            };
+
+            errors.push(SurfaceDecodeMBError {
+                start_mb: error.start_mb,
+                end_mb: error.end_mb,
+                decode_error_type: type_,
+                num_mb: error.num_mb,
+            });
+
+            // Safe because status != -1
+            raw = unsafe { raw.offset(1) };
+        }
+
+        Ok(errors)
     }
 
     /// Returns the ID of this surface.

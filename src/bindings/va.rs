@@ -2835,6 +2835,32 @@ extern "C" {
         status: *mut VASurfaceStatus::Type,
     ) -> VAStatus;
 }
+pub mod VADecodeErrorType {
+    pub type Type = ::std::os::raw::c_uint;
+    pub const VADecodeSliceMissing: Type = 0;
+    pub const VADecodeMBError: Type = 1;
+    pub const VADecodeReset: Type = 2;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct _VASurfaceDecodeMBErrors {
+    pub status: i32,
+    pub start_mb: u32,
+    pub end_mb: u32,
+    pub decode_error_type: VADecodeErrorType::Type,
+    pub num_mb: u32,
+    pub va_reserved: [u32; 3usize],
+}
+impl Default for _VASurfaceDecodeMBErrors {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type VASurfaceDecodeMBErrors = _VASurfaceDecodeMBErrors;
 extern "C" {
     pub fn vaQuerySurfaceError(
         dpy: VADisplay,
