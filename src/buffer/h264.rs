@@ -194,9 +194,13 @@ impl PictureParameterBufferH264 {
 }
 
 /// Wrapper over the `VASliceParameterBufferH264` FFI type.
-pub struct SliceParameterBufferH264(Box<bindings::VASliceParameterBufferH264>);
+pub struct SliceParameterBufferH264(Vec<bindings::VASliceParameterBufferH264>);
 
 impl SliceParameterBufferH264 {
+    pub fn new_array() -> Self {
+        Self(Vec::new())
+    }
+
     /// Creates the wrapper
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -231,10 +235,83 @@ impl SliceParameterBufferH264 {
         chroma_weight_l1: [[i16; 2usize]; 32usize],
         chroma_offset_l1: [[i16; 2usize]; 32usize],
     ) -> Self {
+        let mut array = Self::new_array();
+
+        array.add_slice_parameter(
+            slice_data_size,
+            slice_data_offset,
+            slice_data_flag,
+            slice_data_bit_offset,
+            first_mb_in_slice,
+            slice_type,
+            direct_spatial_mv_pred_flag,
+            num_ref_idx_l0_active_minus1,
+            num_ref_idx_l1_active_minus1,
+            cabac_init_idc,
+            slice_qp_delta,
+            disable_deblocking_filter_idc,
+            slice_alpha_c0_offset_div2,
+            slice_beta_offset_div2,
+            ref_pic_list_0,
+            ref_pic_list_1,
+            luma_log2_weight_denom,
+            chroma_log2_weight_denom,
+            luma_weight_l0_flag,
+            luma_weight_l0,
+            luma_offset_l0,
+            chroma_weight_l0_flag,
+            chroma_weight_l0,
+            chroma_offset_l0,
+            luma_weight_l1_flag,
+            luma_weight_l1,
+            luma_offset_l1,
+            chroma_weight_l1_flag,
+            chroma_weight_l1,
+            chroma_offset_l1,
+        );
+
+        array
+    }
+
+    /// Creates the wrapper
+    #[allow(clippy::too_many_arguments)]
+    pub fn add_slice_parameter(
+        &mut self,
+        slice_data_size: u32,
+        slice_data_offset: u32,
+        slice_data_flag: u32,
+        slice_data_bit_offset: u16,
+        first_mb_in_slice: u16,
+        slice_type: u8,
+        direct_spatial_mv_pred_flag: u8,
+        num_ref_idx_l0_active_minus1: u8,
+        num_ref_idx_l1_active_minus1: u8,
+        cabac_init_idc: u8,
+        slice_qp_delta: i8,
+        disable_deblocking_filter_idc: u8,
+        slice_alpha_c0_offset_div2: i8,
+        slice_beta_offset_div2: i8,
+        ref_pic_list_0: [PictureH264; 32usize],
+        ref_pic_list_1: [PictureH264; 32usize],
+        luma_log2_weight_denom: u8,
+        chroma_log2_weight_denom: u8,
+        luma_weight_l0_flag: u8,
+        luma_weight_l0: [i16; 32usize],
+        luma_offset_l0: [i16; 32usize],
+        chroma_weight_l0_flag: u8,
+        chroma_weight_l0: [[i16; 2usize]; 32usize],
+        chroma_offset_l0: [[i16; 2usize]; 32usize],
+        luma_weight_l1_flag: u8,
+        luma_weight_l1: [i16; 32usize],
+        luma_offset_l1: [i16; 32usize],
+        chroma_weight_l1_flag: u8,
+        chroma_weight_l1: [[i16; 2usize]; 32usize],
+        chroma_offset_l1: [[i16; 2usize]; 32usize],
+    ) {
         let ref_pic_list_0 = ref_pic_list_0.map(|pic| pic.0);
         let ref_pic_list_1 = ref_pic_list_1.map(|pic| pic.0);
 
-        Self(Box::new(bindings::VASliceParameterBufferH264 {
+        let buf = bindings::VASliceParameterBufferH264 {
             slice_data_size,
             slice_data_offset,
             slice_data_flag,
@@ -266,16 +343,18 @@ impl SliceParameterBufferH264 {
             chroma_weight_l1,
             chroma_offset_l1,
             va_reserved: Default::default(),
-        }))
+        };
+
+        self.0.push(buf);
     }
 
-    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VASliceParameterBufferH264 {
-        self.0.as_mut()
+    pub(crate) fn inner_mut(&mut self) -> &mut Vec<bindings::VASliceParameterBufferH264> {
+        &mut self.0
     }
 
     /// Returns the inner FFI type. Useful for testing purposes.
-    pub fn inner(&self) -> &bindings::VASliceParameterBufferH264 {
-        self.0.as_ref()
+    pub fn inner(&self) -> &Vec<bindings::VASliceParameterBufferH264> {
+        &self.0
     }
 }
 
