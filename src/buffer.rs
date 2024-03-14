@@ -164,6 +164,10 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                EncSequenceParameter::AV1(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::EncPictureParameter(ref mut picture_param) => match picture_param {
@@ -183,6 +187,10 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                EncPictureParameter::AV1(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::EncSliceParameter(ref mut slice_param) => match slice_param {
@@ -191,6 +199,10 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
                 EncSliceParameter::HEVC(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                EncSliceParameter::AV1(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -402,6 +414,8 @@ pub enum EncSequenceParameter {
     VP8(vp8::EncSequenceParameterBufferVP8),
     /// Abstraction over `VAEncSequenceParameterBufferVP9`
     VP9(vp9::EncSequenceParameterBufferVP9),
+    /// Abstraction over `VAEncSequenceParameterBufferAV1`
+    AV1(av1::EncSequenceParameterBufferAV1),
 }
 
 /// Abstraction over the `EncPictureParameter` types we support.
@@ -414,6 +428,8 @@ pub enum EncPictureParameter {
     VP8(vp8::EncPictureParameterBufferVP8),
     /// Abstraction over `VAEncPictureParameterBufferVP9`
     VP9(vp9::EncPictureParameterBufferVP9),
+    /// Abstraction over `VAEncPictureParameterBufferAV1`
+    AV1(av1::EncPictureParameterBufferAV1),
 }
 
 /// Abstraction over the `EncSliceParameter` types we support.
@@ -422,6 +438,8 @@ pub enum EncSliceParameter {
     H264(h264::EncSliceParameterBufferH264),
     /// Abstraction over `VAEncSliceParameterBufferHEVC`
     HEVC(hevc::EncSliceParameterBufferHEVC),
+    /// Abstraction over `VAEncTileGroupBufferAV1`
+    AV1(av1::EncTileGroupBufferAV1),
 }
 
 /// Abstraction over the `EncMacroblockParameterBuffer` types we support.
