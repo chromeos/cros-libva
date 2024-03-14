@@ -519,12 +519,13 @@ impl PictureParameterBufferAV1 {
 /// A wrapper over an array of the `VASliceParameterBufferAV1` FFI type. This
 /// allows for passing all tile parameters in a single call if multiple tiles
 /// are present in the tile group.
+#[derive(Default)]
 pub struct SliceParameterBufferAV1(Vec<bindings::VASliceParameterBufferAV1>);
 
 impl SliceParameterBufferAV1 {
     /// Creates the wrapper
     pub fn new() -> Self {
-        Self(Default::default())
+        Default::default()
     }
 
     /// Adds a slice parameter to the wrapper
