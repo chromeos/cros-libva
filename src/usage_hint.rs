@@ -8,6 +8,7 @@ use crate::constants;
 
 bitflags! {
     /// Gives the driver a hint of intended usage to optimize allocation (e.g. tiling).
+    #[derive(Debug, Clone, Copy)]
     pub struct UsageHint: u32 {
         /// Surface used by video decoder.
         const USAGE_HINT_DECODER = constants::VA_SURFACE_ATTRIB_USAGE_HINT_DECODER;
