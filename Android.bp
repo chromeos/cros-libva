@@ -19,6 +19,8 @@ rust_test {
         "liblog_rust",
         "libthiserror",
     ],
+    shared_libs: ["libva"],
+    vendor: true,
 }
 
 rust_library {
@@ -37,4 +39,6 @@ rust_library {
         "//apex_available:platform",
         "//apex_available:anyapex",
     ],
+    shared_libs: ["libva"],
+    vendor: true,
 }
