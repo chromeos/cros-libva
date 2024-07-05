@@ -1,0 +1,11 @@
+{
+  "package": {
+    "cros-libva": {
+      "host_supported": false
+    }
+  },
+  "product_available": false,
+  "vendor_available": false,
+  "run_cargo": false,
+  "tests": true
+}
