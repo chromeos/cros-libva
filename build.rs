@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 use std::env::{self, VarError};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Environment variable that can be set to point to the directory containing the `va.h`, `va_drm.h` and `va_drmcommon.h`
 /// files to use to generate the bindings.
@@ -24,11 +24,6 @@ fn main() {
         return;
     }
 
-    match pkg_config::probe_library("libva") {
-        Ok(_) => (),
-        Err(e) => panic!("libva not found: {}", e),
-    };
-
     let va_h_path = env::var(CROS_LIBVA_H_PATH_ENV)
         .or_else(|e| {
             if let VarError::NotPresent = e {
@@ -38,6 +33,13 @@ fn main() {
             }
         })
         .expect("invalid `CROS_LIBVA_H_PATH` environment variable");
+
+    // Check the path exists.
+    assert!(
+        Path::new(&va_h_path).exists(),
+        "{} does'nt exist",
+        va_h_path
+    );
 
     // Tell cargo to link va and va-drm objects dynamically.
     println!("cargo:rustc-link-lib=dylib=va");

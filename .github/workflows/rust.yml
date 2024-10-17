@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CROS_LIBVA_H_PATH: ${{ github.workspace }}/work/va
 
 jobs:
   build:
@@ -15,11 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages: libva-dev
-        version: 1.0
     - uses: actions/checkout@v3
+    - name: "Check out libva"
+      run: git clone https://github.com/intel/libva --branch 2.22.0 --depth 1 ${{ github.workspace }}/work
     - name: Build
       run: cargo build --all-features --verbose --workspace --tests --examples
     - name: Clippy
