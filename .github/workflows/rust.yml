@@ -18,7 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: "Check out libva"
-      run: git clone https://github.com/intel/libva --branch 2.22.0 --depth 1 ${{ github.workspace }}/work
+      run: |
+      curl -O -L https://github.com/intel/libva/releases/download/2.22.0/libva-2.22.0.tar.bz2 && \
+      tar xf libva-2.22.0.tar.bz2 --one-top-level=work --strip-components 1
     - name: Build
       run: cargo build --all-features --verbose --workspace --tests --examples
     - name: Clippy
