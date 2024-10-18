@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CROS_LIBVA_H_PATH: ${{ github.workspace }}/work
 
 jobs:
   build:
@@ -16,13 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: libva-dev
+        version: 1.0
     - uses: actions/checkout@v3
-    - name: "Check out libva"
-      run: |
-        curl -O -L https://github.com/intel/libva/releases/download/2.22.0/libva-2.22.0.tar.bz2 && \
-        tar xf libva-2.22.0.tar.bz2 --one-top-level=work --strip-components 1
-    - name: "move va/va_drm.h"
-      run: mv ${{ github.workspace }}/work/va/drm/va_drm.h ${{ github.workspace }}/work/va/va_drm.h
     - name: Build
       run: cargo build --all-features --verbose --workspace --tests --examples
     - name: Clippy
