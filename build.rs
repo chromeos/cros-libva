@@ -2,15 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::env::{self, VarError};
+use std::env::{self};
 use std::path::{Path, PathBuf};
 
 /// Environment variable that can be set to point to the directory containing the `va.h`, `va_drm.h` and `va_drmcommon.h`
 /// files to use to generate the bindings.
 const CROS_LIBVA_H_PATH_ENV: &str = "CROS_LIBVA_H_PATH";
-
-/// Default header file to parse if the `CROS_LIBVA_H_PATH` environment variable is not set.
-const DEFAULT_CROS_LIBVA_H_PATH: &str = "/usr/include";
 
 /// Wrapper file to use as input of bindgen.
 const WRAPPER_PATH: &str = "libva-wrapper.h";
@@ -24,37 +21,34 @@ fn main() {
         return;
     }
 
-    let va_h_path = env::var(CROS_LIBVA_H_PATH_ENV)
-        .or_else(|e| {
-            if let VarError::NotPresent = e {
-                Ok(DEFAULT_CROS_LIBVA_H_PATH.to_string())
-            } else {
-                Err(e)
-            }
-        })
-        .expect("invalid `CROS_LIBVA_H_PATH` environment variable");
+    let va_h_path = env::var(CROS_LIBVA_H_PATH_ENV).unwrap_or_default();
 
     // Check the path exists.
-    assert!(
-        Path::new(&va_h_path).exists(),
-        "{} does'nt exist",
-        va_h_path
-    );
+    if !va_h_path.is_empty() {
+        assert!(
+            Path::new(&va_h_path).exists(),
+            "{} doesn't exist",
+            va_h_path
+        );
+    }
 
     // Tell cargo to link va and va-drm objects dynamically.
     println!("cargo:rustc-link-lib=dylib=va");
     println!("cargo:rustc-link-lib=dylib=va-drm"); // for the vaGetDisplayDRM entrypoint
 
-    let bindings = bindgen::builder()
+    let mut bindings_builder = bindgen::builder()
         .header(WRAPPER_PATH)
-        .clang_arg(format!("-I{}", va_h_path))
         .raw_line("pub mod constants;")
         .derive_default(true)
         .derive_eq(true)
         .layout_tests(false)
         .constified_enum_module("VA.*")
         .allowlist_function("va.*")
-        .allowlist_type(ALLOW_LIST_TYPE)
+        .allowlist_type(ALLOW_LIST_TYPE);
+    if !va_h_path.is_empty() {
+        bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
+    }
+    let bindings = bindings_builder
         .generate()
         .expect("unable to generate bindings");
 
