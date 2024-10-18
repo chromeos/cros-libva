@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CROS_LIBVA_H_PATH: ${{ github.workspace }}/work/va
+  CROS_LIBVA_H_PATH: ${{ github.workspace }}/work
 
 jobs:
   build:

@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 const CROS_LIBVA_H_PATH_ENV: &str = "CROS_LIBVA_H_PATH";
 
 /// Default header file to parse if the `CROS_LIBVA_H_PATH` environment variable is not set.
-const DEFAULT_CROS_LIBVA_H_PATH: &str = "/usr/include/va";
+const DEFAULT_CROS_LIBVA_H_PATH: &str = "/usr/include";
 
 /// Wrapper file to use as input of bindgen.
 const WRAPPER_PATH: &str = "libva-wrapper.h";
