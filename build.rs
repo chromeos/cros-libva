@@ -58,10 +58,13 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 
-    let bindings = bindgen::builder()
+    let mut bindings_builder = bindgen::builder()
         .header(WRAPPER_PATH)
-        .clang_arg(format!("-I{}", va_h_path))
-        .allowlist_var("VA.*")
+        .allowlist_var("VA.*");
+    if !va_h_path.is_empty() {
+        bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
+    }
+    let bindings = bindings_builder
         .generate()
         .expect("unable to generate bindings");
     bindings
