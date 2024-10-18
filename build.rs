@@ -36,16 +36,19 @@ fn main() {
     println!("cargo:rustc-link-lib=dylib=va");
     println!("cargo:rustc-link-lib=dylib=va-drm"); // for the vaGetDisplayDRM entrypoint
 
-    let bindings = bindgen::builder()
+    let mut bindings_builder = bindgen::builder()
         .header(WRAPPER_PATH)
         .raw_line("pub mod constants;")
-        .clang_arg(format!("-I{}", va_h_path))
         .derive_default(true)
         .derive_eq(true)
         .layout_tests(false)
         .constified_enum_module("VA.*")
         .allowlist_function("va.*")
-        .allowlist_type(ALLOW_LIST_TYPE)
+        .allowlist_type(ALLOW_LIST_TYPE);
+    if !va_h_path.is_empty() {
+        bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
+    }
+    let bindings = bindings_builder
         .generate()
         .expect("unable to generate bindings");
 
