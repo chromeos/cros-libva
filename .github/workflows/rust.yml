@@ -10,6 +10,7 @@ env:
   CARGO_TERM_COLOR: always
   CROS_LIBVA_H_PATH: ${{ github.workspace }}/work/out/include
   RUSTFLAGS: '-L ${{ github.workspace }}/work/out/lib'
+  RUSTDOCFLAGS: '-L ${{ github.workspace }}/work/out/lib'
 jobs:
   build:
 
