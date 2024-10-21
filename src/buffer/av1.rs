@@ -721,6 +721,8 @@ impl AV1EncPictureFlags {
         disable_frame_recon: bool,
         allow_intrabc: bool,
         palette_mode_enable: bool,
+        allow_screen_content_tools: bool,
+        force_integer_mv: bool,
     ) -> Self {
         let error_resilient_mode = error_resilient_mode as u32;
         let disable_cdf_update = disable_cdf_update as u32;
@@ -734,6 +736,8 @@ impl AV1EncPictureFlags {
         let disable_frame_recon = disable_frame_recon as u32;
         let allow_intrabc = allow_intrabc as u32;
         let palette_mode_enable = palette_mode_enable as u32;
+        let allow_screen_content_tools = allow_screen_content_tools as u32;
+        let force_integer_mv = force_integer_mv as u32;
 
         let _bitfield_1 =
             bindings::_VAEncPictureParameterBufferAV1__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
@@ -750,6 +754,8 @@ impl AV1EncPictureFlags {
                 disable_frame_recon,
                 allow_intrabc,
                 palette_mode_enable,
+                allow_screen_content_tools,
+                force_integer_mv,
                 Default::default(),
             );
 

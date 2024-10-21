@@ -8,7 +8,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-
+  CROS_LIBVA_H_PATH: ${{ github.workspace }}/work/out/include
+  CROS_LIBVA_LIB_PATH: ${{ github.workspace }}/work/out/lib
+  RUSTFLAGS: '-L ${{ github.workspace }}/work/out/lib'
+  RUSTDOCFLAGS: '-L ${{ github.workspace }}/work/out/lib'
 jobs:
   build:
 
@@ -17,9 +20,19 @@ jobs:
     steps:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: libva-dev
+        packages: libdrm-dev
         version: 1.0
     - uses: actions/checkout@v3
+    - name: "checkout libva"
+      run: |
+        curl -O -L https://github.com/intel/libva/archive/refs/tags/2.22.0.tar.gz && \
+        tar xf 2.22.0.tar.gz --one-top-level=work --strip-components 1
+    - name: "build libva"
+      run: |
+        cd work; \
+        ./autogen.sh --enable-drm --disable-x11 --disable-glx --disable-wayland --prefix=${{ github.workspace }}/work/out && \
+        make && \
+        make install
     - name: Build
       run: cargo build --all-features --verbose --workspace --tests --examples
     - name: Clippy
