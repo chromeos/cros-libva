@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 /// Environment variable that can be set to point to the directory containing the `va.h`, `va_drm.h` and `va_drmcommon.h`
 /// files to use to generate the bindings.
 const CROS_LIBVA_H_PATH_ENV: &str = "CROS_LIBVA_H_PATH";
+const CROS_LIBVA_LIB_PATH_ENV: &str = "CROS_LIBVA_LIB_PATH";
 
 /// Wrapper file to use as input of bindgen.
 const WRAPPER_PATH: &str = "libva-wrapper.h";
@@ -22,7 +23,7 @@ fn main() {
     }
 
     let va_h_path = env::var(CROS_LIBVA_H_PATH_ENV).unwrap_or_default();
-
+    let va_lib_path = env::var(CROS_LIBVA_LIB_PATH_ENV).unwrap_or_default();
     // Check the path exists.
     if !va_h_path.is_empty() {
         assert!(
@@ -30,6 +31,15 @@ fn main() {
             "{} doesn't exist",
             va_h_path
         );
+    }
+
+    if !va_lib_path.is_empty() {
+        assert!(
+            Path::new(&va_h_path).exists(),
+            "{} doesn't exist",
+            va_h_path
+        );
+        println!("cargo:rustc-link-arg=-Wl,-rpath={}", va_lib_path);
     }
 
     // Tell cargo to link va and va-drm objects dynamically.
