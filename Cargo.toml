@@ -1,6 +1,6 @@
 [package]
 name = "cros-libva"
-version = "2.22.0"
+version = "0.0.8"
 license = "BSD-3-Clause"
 description = "Safe bindings over libva"
 repository = "https://github.com/chromeos/cros-libva"
