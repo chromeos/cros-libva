@@ -36,7 +36,7 @@ impl Context {
     ) -> Result<Rc<Self>, VaError> {
         let mut context_id = 0;
         let flags = if progressive {
-            bindings::constants::VA_PROGRESSIVE as i32
+            bindings::VA_PROGRESSIVE as i32
         } else {
             0
         };

@@ -48,11 +48,11 @@ fn main() {
 
     let mut bindings_builder = bindgen::builder()
         .header(WRAPPER_PATH)
-        .raw_line("pub mod constants;")
         .derive_default(true)
         .derive_eq(true)
         .layout_tests(false)
         .constified_enum_module("VA.*")
+        .allowlist_var("VA.*")
         .allowlist_function("va.*")
         .allowlist_type(ALLOW_LIST_TYPE);
     if !va_h_path.is_empty() {
@@ -66,18 +66,5 @@ fn main() {
 
     bindings
         .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
-
-    let mut bindings_builder = bindgen::builder()
-        .header(WRAPPER_PATH)
-        .allowlist_var("VA.*");
-    if !va_h_path.is_empty() {
-        bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
-    }
-    let bindings = bindings_builder
-        .generate()
-        .expect("unable to generate bindings");
-    bindings
-        .write_to_file(out_path.join("constants.rs"))
         .expect("Couldn't write bindings!");
 }

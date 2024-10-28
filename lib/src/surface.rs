@@ -37,10 +37,10 @@ pub trait SurfaceMemoryDescriptor {
 /// VA memory types, aka `VA_SURFACE_ATTRIB_MEM_TYPE_*`.
 #[repr(u32)]
 pub enum MemoryType {
-    Va = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_VA,
-    V4L2 = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_V4L2,
-    UserPtr = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_USER_PTR,
-    DrmPrime2 = bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+    Va = bindings::VA_SURFACE_ATTRIB_MEM_TYPE_VA,
+    V4L2 = bindings::VA_SURFACE_ATTRIB_MEM_TYPE_V4L2,
+    UserPtr = bindings::VA_SURFACE_ATTRIB_MEM_TYPE_USER_PTR,
+    DrmPrime2 = bindings::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
 }
 
 /// Used when we want the VA driver to allocate surface memory for us. In this case we don't need
@@ -160,7 +160,7 @@ impl bindings::VASurfaceAttrib {
     pub fn new_pixel_format(fourcc: u32) -> Self {
         Self {
             type_: bindings::VASurfaceAttribType::VASurfaceAttribPixelFormat,
-            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            flags: bindings::VA_SURFACE_ATTRIB_SETTABLE,
             value: bindings::VAGenericValue::from(fourcc as i32),
         }
     }
@@ -168,7 +168,7 @@ impl bindings::VASurfaceAttrib {
     pub fn new_usage_hint(usage_hint: UsageHint) -> Self {
         Self {
             type_: bindings::VASurfaceAttribType::VASurfaceAttribUsageHint,
-            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            flags: bindings::VA_SURFACE_ATTRIB_SETTABLE,
             value: bindings::VAGenericValue::from(usage_hint.bits() as i32),
         }
     }
@@ -176,7 +176,7 @@ impl bindings::VASurfaceAttrib {
     pub fn new_memory_type(mem_type: MemoryType) -> Self {
         Self {
             type_: bindings::VASurfaceAttribType::VASurfaceAttribMemoryType,
-            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            flags: bindings::VA_SURFACE_ATTRIB_SETTABLE,
             value: bindings::VAGenericValue::from(mem_type as i32),
         }
     }
@@ -184,7 +184,7 @@ impl bindings::VASurfaceAttrib {
     pub fn new_buffer_descriptor<T: SurfaceExternalDescriptor>(desc: &mut T) -> Self {
         Self {
             type_: bindings::VASurfaceAttribType::VASurfaceAttribExternalBufferDescriptor,
-            flags: bindings::constants::VA_SURFACE_ATTRIB_SETTABLE,
+            flags: bindings::VA_SURFACE_ATTRIB_SETTABLE,
             value: bindings::VAGenericValue::from(desc as *mut _ as *mut c_void),
         }
     }
@@ -290,7 +290,7 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
             bindings::vaQuerySurfaceError(
                 self.display.handle(),
                 self.id,
-                bindings::constants::VA_STATUS_ERROR_DECODING_ERROR as i32,
+                bindings::VA_STATUS_ERROR_DECODING_ERROR as i32,
                 (&mut raw) as *mut _ as *mut _,
             )
         })?;
@@ -352,9 +352,8 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
             bindings::vaExportSurfaceHandle(
                 self.display.handle(),
                 self.id(),
-                bindings::constants::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-                bindings::constants::VA_EXPORT_SURFACE_READ_ONLY
-                    | bindings::constants::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
+                bindings::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                bindings::VA_EXPORT_SURFACE_READ_ONLY | bindings::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
                 &mut desc as *mut _ as *mut c_void,
             )
         })?;

@@ -18,7 +18,6 @@ mod picture;
 mod surface;
 mod usage_hint;
 
-pub use bindings::constants;
 pub use bindings::VAConfigAttrib;
 pub use bindings::VAConfigAttribType;
 pub use bindings::VADRMPRIMESurfaceDescriptor;
@@ -78,7 +77,7 @@ impl std::error::Error for VaError {}
 /// convert it to a proper Rust `Result`.
 fn va_check(code: VAStatus) -> Result<(), VaError> {
     match code as u32 {
-        constants::VA_STATUS_SUCCESS => Ok(()),
+        bindings::VA_STATUS_SUCCESS => Ok(()),
         _ => Err(VaError(unsafe { NonZeroI32::new_unchecked(code) })),
     }
 }
@@ -143,7 +142,7 @@ mod tests {
             .iter()
             .any(|e| *e == bindings::VAEntrypoint::VAEntrypointVLD));
 
-        let format = bindings::constants::VA_RT_FORMAT_YUV420;
+        let format = bindings::VA_RT_FORMAT_YUV420;
         let width = 16u32;
         let height = 16u32;
 
@@ -156,8 +155,8 @@ mod tests {
         display
             .get_config_attributes(profile, entrypoint, &mut attrs)
             .unwrap();
-        assert!(attrs[0].value != bindings::constants::VA_ATTRIB_NOT_SUPPORTED);
-        assert!(attrs[0].value & bindings::constants::VA_RT_FORMAT_YUV420 != 0);
+        assert!(attrs[0].value != bindings::VA_ATTRIB_NOT_SUPPORTED);
+        assert!(attrs[0].value & bindings::VA_RT_FORMAT_YUV420 != 0);
 
         let config = display.create_config(attrs, profile, entrypoint).unwrap();
 
@@ -267,7 +266,7 @@ mod tests {
         let image_fmts = display.query_image_formats().unwrap();
         let image_fmt = image_fmts
             .into_iter()
-            .find(|f| f.fourcc == bindings::constants::VA_FOURCC_NV12)
+            .find(|f| f.fourcc == bindings::VA_FOURCC_NV12)
             .expect("No valid VAImageFormat found for NV12");
 
         let resolution = (width, height);
@@ -288,7 +287,7 @@ mod tests {
 
         let display = Display::open().unwrap();
 
-        let format = bindings::constants::VA_RT_FORMAT_YUV420;
+        let format = bindings::VA_RT_FORMAT_YUV420;
         let entrypoint = bindings::VAEntrypoint::VAEntrypointEncSliceLP;
         let profile = bindings::VAProfile::VAProfileH264ConstrainedBaseline;
         let width = 64u32;
@@ -329,7 +328,7 @@ mod tests {
         let image_fmts = display.query_image_formats().unwrap();
         let image_fmt = image_fmts
             .into_iter()
-            .find(|f| f.fourcc == bindings::constants::VA_FOURCC_NV12)
+            .find(|f| f.fourcc == bindings::VA_FOURCC_NV12)
             .expect("No valid VAImageFormat found for NV12");
 
         let surface = surfaces.pop().unwrap();
@@ -403,9 +402,9 @@ mod tests {
         let ref_frames: [PictureH264; 16] = (0..16)
             .map(|_| {
                 PictureH264::new(
-                    constants::VA_INVALID_ID,
+                    bindings::VA_INVALID_ID,
                     0,
-                    constants::VA_INVALID_SURFACE,
+                    bindings::VA_INVALID_SURFACE,
                     0,
                     0,
                 )
@@ -439,9 +438,9 @@ mod tests {
         let ref_pic_list_0: [PictureH264; 32] = (0..32)
             .map(|_| {
                 PictureH264::new(
-                    constants::VA_INVALID_ID,
+                    bindings::VA_INVALID_ID,
                     0,
-                    constants::VA_INVALID_SURFACE,
+                    bindings::VA_INVALID_SURFACE,
                     0,
                     0,
                 )
@@ -455,9 +454,9 @@ mod tests {
         let ref_pic_list_1: [PictureH264; 32] = (0..32)
             .map(|_| {
                 PictureH264::new(
-                    constants::VA_INVALID_ID,
+                    bindings::VA_INVALID_ID,
                     0,
-                    constants::VA_INVALID_SURFACE,
+                    bindings::VA_INVALID_SURFACE,
                     0,
                     0,
                 )
@@ -472,7 +471,7 @@ mod tests {
             EncSliceParameterBufferH264::new(
                 0,
                 ((width / 16) * (height / 16)) as u32,
-                constants::VA_INVALID_ID,
+                bindings::VA_INVALID_ID,
                 2, // I
                 0,
                 1,
