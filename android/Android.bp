@@ -1,0 +1,43 @@
+// Copyright 2024 The ChromiumOS Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package {
+    default_applicable_licenses: ["external_rust_crates_cros-libva_license"],
+}
+
+rust_binary_host {
+    name: "cros_libva_bindgen_build",
+    srcs: ["build.rs"],
+    rustlibs: [
+        "libbindgen",
+        "libbindgen_cmd",
+    ],
+    lints: "android",
+    clippy_lints: "android",
+    product_available: true,
+    vendor_available: true,
+}
+
+rust_bindgen {
+    name: "libcros_libva_bindgen",
+    crate_name: "cros_libva_bindgen",
+    custom_bindgen: "cros_libva_bindgen_build",
+    wrapper_src: "android_wrapper.h",
+    source_stem: "bindings",
+    cflags: ["-I external/rust/crates/cros-libva/lib"],
+    product_available: true,
+    vendor_available: true,
+    visibility: ["//external/rust/crates/cros-libva/lib"],
+
+    // Libva headers that bindings source is generated from.
+    arch: {
+        x86_64: {
+            // Bindgen-generated bindings of our local libva headers.
+            header_libs: [
+                "libva_headers",
+            ],
+        },
+    },
+
+}
