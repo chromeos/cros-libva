@@ -28,8 +28,15 @@ rust_test {
         "libthiserror",
     ],
 
-    // Bindgen-generated bindings of our local libva headers.
-    srcs: [":libcros_libva_bindgen"],
+    vendor: true,
+    enabled: false,
+    arch: {
+        x86_64: {
+            enabled: true,
+            // Bindgen-generated bindings of our local libva headers.
+            srcs: [":libcros_libva_bindgen"],
+        },
+    },
 }
 
 rust_library {
@@ -48,13 +55,14 @@ rust_library {
         "//apex_available:platform",
         "//apex_available:anyapex",
     ],
-    product_available: true,
-    vendor_available: true,
 
+    vendor: true,
+    enabled: false,
     arch: {
         x86_64: {
+            enabled: true,
             // Bindgen-generated bindings of our local libva headers.
             srcs: [":libcros_libva_bindgen"],
-        }
+        },
     },
 }
