@@ -5,7 +5,8 @@
 use std::env::{self};
 use std::path::{Path, PathBuf};
 
-include!("bindgen.rs");
+mod bindgen_gen;
+use bindgen_gen::vaapi_gen_builder;
 
 /// Environment variable that can be set to point to the directory containing the `va.h`, `va_drm.h` and `va_drmcommon.h`
 /// files to use to generate the bindings.

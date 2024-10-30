@@ -4,8 +4,9 @@
 
 //! cros-libva bindings generator in Android.
 
-include!("../lib/bindgen.rs");
+#[path = "../lib/bindgen_gen.rs"]
+mod bindgen_gen;
 
 fn main() {
-    bindgen_cmd::build(vaapi_gen_builder);
+    bindgen_cmd::build(bindgen_gen::vaapi_gen_builder);
 }

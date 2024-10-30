@@ -63,6 +63,7 @@ rust_library {
             enabled: true,
             // Bindgen-generated bindings of our local libva headers.
             srcs: [":libcros_libva_bindgen"],
+            shared_libs: [ "libva" ],
         },
     },
 }

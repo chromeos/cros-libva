@@ -6,7 +6,7 @@
 const ALLOW_LIST_TYPE : &str = ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|VACodedBufferSegment|.*AV1.*|VAEncMisc.*|VASurfaceDecodeMBErrors|VADecodeErrorType";
 
 // The common bindgen builder for VA-API.
-fn vaapi_gen_builder(builder: bindgen::Builder) -> bindgen::Builder {
+pub fn vaapi_gen_builder(builder: bindgen::Builder) -> bindgen::Builder {
     builder
         .derive_default(true)
         .derive_eq(true)
