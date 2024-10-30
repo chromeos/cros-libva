@@ -1,0 +1,20 @@
+[package]
+name = "cros-libva"
+version = "0.0.8"
+license = "BSD-3-Clause"
+description = "Safe bindings over libva"
+repository = "https://github.com/chromeos/cros-libva"
+authors = ["The Chromium OS Authors"]
+edition = "2021"
+
+[dependencies]
+thiserror = "1"
+bitflags = "2.5"
+log = { version = "0", features = ["release_max_level_debug"] }
+
+[build-dependencies]
+bindgen = "0.70.1"
+pkg-config = "0.3.26"
+
+[dev-dependencies]
+crc32fast = "1.2.1"

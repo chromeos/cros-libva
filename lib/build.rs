@@ -5,6 +5,9 @@
 use std::env::{self};
 use std::path::{Path, PathBuf};
 
+mod bindgen_gen;
+use bindgen_gen::vaapi_gen_builder;
+
 /// Environment variable that can be set to point to the directory containing the `va.h`, `va_drm.h` and `va_drmcommon.h`
 /// files to use to generate the bindings.
 const CROS_LIBVA_H_PATH_ENV: &str = "CROS_LIBVA_H_PATH";
@@ -12,9 +15,6 @@ const CROS_LIBVA_LIB_PATH_ENV: &str = "CROS_LIBVA_LIB_PATH";
 
 /// Wrapper file to use as input of bindgen.
 const WRAPPER_PATH: &str = "libva-wrapper.h";
-
-/// Allow list
-const ALLOW_LIST_TYPE : &str = ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|VACodedBufferSegment|.*AV1.*|VAEncMisc.*|VASurfaceDecodeMBErrors|VADecodeErrorType";
 
 fn main() {
     // Do not require dependencies when generating docs.
@@ -46,15 +46,7 @@ fn main() {
     println!("cargo:rustc-link-lib=dylib=va");
     println!("cargo:rustc-link-lib=dylib=va-drm"); // for the vaGetDisplayDRM entrypoint
 
-    let mut bindings_builder = bindgen::builder()
-        .header(WRAPPER_PATH)
-        .raw_line("pub mod constants;")
-        .derive_default(true)
-        .derive_eq(true)
-        .layout_tests(false)
-        .constified_enum_module("VA.*")
-        .allowlist_function("va.*")
-        .allowlist_type(ALLOW_LIST_TYPE);
+    let mut bindings_builder = vaapi_gen_builder(bindgen::builder()).header(WRAPPER_PATH);
     if !va_h_path.is_empty() {
         bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
     }
@@ -66,18 +58,5 @@ fn main() {
 
     bindings
         .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
-
-    let mut bindings_builder = bindgen::builder()
-        .header(WRAPPER_PATH)
-        .allowlist_var("VA.*");
-    if !va_h_path.is_empty() {
-        bindings_builder = bindings_builder.clang_arg(format!("-I{}", va_h_path));
-    }
-    let bindings = bindings_builder
-        .generate()
-        .expect("unable to generate bindings");
-    bindings
-        .write_to_file(out_path.join("constants.rs"))
         .expect("Couldn't write bindings!");
 }

@@ -108,7 +108,7 @@ impl PictureParameterBufferVP8 {
             last_ref_frame,
             golden_ref_frame,
             alt_ref_frame,
-            out_of_loop_frame: bindings::constants::VA_INVALID_SURFACE,
+            out_of_loop_frame: bindings::VA_INVALID_SURFACE,
             pic_fields,
             mb_segment_tree_probs,
             loop_filter_level,

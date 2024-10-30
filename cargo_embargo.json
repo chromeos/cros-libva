@@ -1,0 +1,10 @@
+{
+    "package": {
+      "cros_libva": {
+        "host_supported": false,
+        "add_module_block": "android/srcs.bp"
+      }
+    },
+    "run_cargo": false,
+    "tests": true
+}
