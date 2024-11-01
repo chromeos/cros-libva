@@ -9,9 +9,9 @@ usable anywhere.
 
 The native [libva](https://github.com/intel/libva) library is required at link
 time, so make sure to have the `libva-dev` or equivalent package for your
-distribution installed. The VA-API driver corresponding to your hardware is
-also required: for Intel hardware it will be
-[intel-media-driver](https://github.com/intel/media-driver), whereas AMD
+distribution installed. The compatible libva version is 1.22.0. The VA-API
+driver corresponding to your hardware is also required: for Intel hardware it
+will be [intel-media-driver](https://github.com/intel/media-driver), whereas AMD
 hardware relies on [Mesa](https://gitlab.freedesktop.org/mesa/mesa).
 
 An easy way to see whether everything is in order is to run the `vainfo`
@@ -49,6 +49,11 @@ Whereas to decode H264 Main profile media, this line must be present:
 
 For more information on VA-API and its usage within ChromeOS, see [this
 guide](https://chromium.googlesource.com/chromium/src/+/master/docs/gpu/vaapi.md).
+
+cros-libva can also be built in Android. Android.bp files are provided that
+should work on AOSP >= 15. Just check this repository into
+external/rust/crates/cros-libva and the libcros_libva library target will be
+ available.
 
 ## Using
 
