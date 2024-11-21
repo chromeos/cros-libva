@@ -56,6 +56,10 @@ rust_library {
         "//apex_available:anyapex",
     ],
 
+    cfgs: [
+        "libva_1_21_or_higher",
+    ],
+
     vendor: true,
     enabled: false,
     arch: {

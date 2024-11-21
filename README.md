@@ -9,10 +9,10 @@ usable anywhere.
 
 The native [libva](https://github.com/intel/libva) library is required at link
 time, so make sure to have the `libva-dev` or equivalent package for your
-distribution installed. The compatible libva version is 1.22.0. The VA-API
-driver corresponding to your hardware is also required: for Intel hardware it
-will be [intel-media-driver](https://github.com/intel/media-driver), whereas AMD
-hardware relies on [Mesa](https://gitlab.freedesktop.org/mesa/mesa).
+distribution installed. The libva version needs to be 1.20.0 or newer. The
+VA-API driver corresponding to your hardware is also required: for Intel
+hardware it will be [intel-media-driver](https://github.com/intel/media-driver),
+whereas AMD hardware relies on [Mesa](https://gitlab.freedesktop.org/mesa/mesa).
 
 An easy way to see whether everything is in order is to run the `vainfo`
 utility packaged with `libva-utils` or as a standalone package in some
