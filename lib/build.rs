@@ -41,8 +41,9 @@ fn get_va_version(va_h_path: &str) -> (u32, u32) {
             .clone()
             .filter(|&s| re.is_match(s))
             .collect::<Vec<_>>();
-        assert!(
-            match_line.len() == 1,
+        assert_eq!(
+            match_line.len(),
+            1,
             "unexpected match for {}: {:?}",
             VERSION_REGEX_STRINGS[i],
             match_line
