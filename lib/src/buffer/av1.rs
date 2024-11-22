@@ -736,10 +736,11 @@ impl AV1EncPictureFlags {
         let disable_frame_recon = disable_frame_recon as u32;
         let allow_intrabc = allow_intrabc as u32;
         let palette_mode_enable = palette_mode_enable as u32;
-        let allow_screen_content_tools = allow_screen_content_tools as u32;
-        let force_integer_mv = force_integer_mv as u32;
 
-        let _bitfield_1 =
+        #[cfg(libva_1_21_or_higher)]
+        let _bitfield_1 = {
+            let allow_screen_content_tools = allow_screen_content_tools as u32;
+            let force_integer_mv = force_integer_mv as u32;
             bindings::_VAEncPictureParameterBufferAV1__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
                 frame_type,
                 error_resilient_mode,
@@ -756,6 +757,27 @@ impl AV1EncPictureFlags {
                 palette_mode_enable,
                 allow_screen_content_tools,
                 force_integer_mv,
+                Default::default(),
+            )
+        };
+        #[cfg(not(libva_1_21_or_higher))]
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferAV1__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                frame_type,
+                error_resilient_mode,
+                disable_cdf_update,
+                use_superres,
+                allow_high_precision_mv,
+                use_ref_frame_mvs,
+                disable_frame_end_update_cdf,
+                reduced_tx_set,
+                enable_frame_obu,
+                long_term_reference,
+                disable_frame_recon,
+                allow_intrabc,
+                palette_mode_enable,
+                //allow_screen_content_tools,
+                //force_integer_mv,
                 Default::default(),
             );
 

@@ -16,7 +16,8 @@ log = { version = "0", features = ["release_max_level_debug"] }
 
 [build-dependencies]
 bindgen = "0.70.1"
-pkg-config = "0.3.26"
+pkg-config = "0.3.31"
+regex = "1.11.1"
 
 [dev-dependencies]
 crc32fast = "1.2.1"
