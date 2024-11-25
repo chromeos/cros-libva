@@ -102,6 +102,15 @@ fn main() {
     if va_check_version(1, 21) {
         println!("cargo::rustc-cfg=libva_1_21_or_higher");
     }
+    if va_check_version(1, 20) {
+        println!("cargo::rustc-cfg=libva_1_20_or_higher")
+    }
+    if va_check_version(1, 19) {
+        println!("cargo::rustc-cfg=libva_1_19_or_higher")
+    }
+    if va_check_version(1, 16) {
+        println!("cargo::rustc-cfg=libva_1_16_or_higher")
+    }
 
     if !va_lib_path.is_empty() {
         assert!(

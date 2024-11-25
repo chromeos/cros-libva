@@ -33,8 +33,6 @@ pub use usage_hint::*;
 
 use std::num::NonZeroI32;
 
-use crate::bindings::VAStatus;
-
 /// A `VAStatus` that is guaranteed to not be `VA_STATUS_SUCCESS`.
 #[derive(Debug)]
 pub struct VaError(NonZeroI32);
