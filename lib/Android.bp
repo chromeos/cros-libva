@@ -6,7 +6,7 @@
 // Do not modify this file because the changes will be overridden on upgrade.
 
 package {
-    default_applicable_licenses: ["external_rust_crates_cros-libva_license"],
+    default_applicable_licenses: ["external_rust_cros-libva_license"],
 }
 
 rust_test {

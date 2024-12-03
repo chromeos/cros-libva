@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 license {
-    name: "external_rust_crates_cros-libva_license",
+    name: "external_rust_cros-libva_license",
     visibility: [":__subpackages__"],
     license_kinds: ["SPDX-license-identifier-BSD-3-Clause"],
     license_text: ["LICENSE"],
