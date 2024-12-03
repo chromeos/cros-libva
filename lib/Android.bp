@@ -9,36 +9,6 @@ package {
     default_applicable_licenses: ["external_rust_cros-libva_license"],
 }
 
-rust_test {
-    name: "cros-libva_test_src_lib",
-    crate_name: "cros_libva",
-    cargo_env_compat: true,
-    cargo_pkg_version: "0.0.8",
-    crate_root: "src/lib.rs",
-    test_suites: ["general-tests"],
-    auto_gen_config: true,
-    test_options: {
-        unit_test: true,
-    },
-    edition: "2021",
-    rustlibs: [
-        "libbitflags",
-        "libcrc32fast",
-        "liblog_rust",
-        "libthiserror",
-    ],
-
-    vendor: true,
-    enabled: false,
-    arch: {
-        x86_64: {
-            enabled: true,
-            // Bindgen-generated bindings of our local libva headers.
-            srcs: [":libcros_libva_bindgen"],
-        },
-    },
-}
-
 rust_library {
     name: "libcros_libva",
     crate_name: "cros_libva",
@@ -70,7 +40,7 @@ rust_library {
             enabled: true,
             // Bindgen-generated bindings of our local libva headers.
             srcs: [":libcros_libva_bindgen"],
-            shared_libs: [ "libva" ],
+            shared_libs: ["libva"],
         },
     },
 }
