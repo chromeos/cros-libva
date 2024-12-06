@@ -17,6 +17,12 @@ rust_binary_host {
     clippy_lints: "android",
 
     vendor: true,
+    enabled: false,
+    arch: {
+        x86_64: {
+            enabled: true,
+        },
+    },
 }
 
 rust_bindgen {
