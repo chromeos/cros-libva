@@ -5,6 +5,7 @@
 //! Wrappers and helpers around `VABuffer`s.
 
 mod av1;
+mod enc_jpeg;
 mod enc_misc;
 mod h264;
 mod hevc;
@@ -15,6 +16,7 @@ mod vp8;
 mod vp9;
 
 pub use av1::*;
+pub use enc_jpeg::*;
 pub use enc_misc::*;
 pub use h264::*;
 pub use hevc::*;
@@ -94,6 +96,10 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                PictureParameter::EncJPEG(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::SliceParameter(ref mut slice_param) => match slice_param {
@@ -126,6 +132,10 @@ impl Buffer {
                     std::mem::size_of::<bindings::VASliceParameterBufferAV1>(),
                 ),
                 SliceParameter::JPEGBaseline(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                SliceParameter::EncJpeg(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -278,6 +288,12 @@ impl Buffer {
                 proc_pipeline_param.inner_mut() as *mut _ as *mut std::ffi::c_void,
                 std::mem::size_of_val(proc_pipeline_param.inner_mut()),
             ),
+            BufferType::QMatrix(ref mut q_matrix) => match q_matrix {
+                QMatrix::JPEG(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -350,6 +366,8 @@ pub enum BufferType {
     EncMiscParameter(EncMiscParameter),
     /// Abstraction over `VAProcPipelineParameterBuffer`.
     ProcPipelineParameter(proc_pipeline::ProcPipelineParameterBuffer),
+    /// Abstraction over `VAQMatrixBufferType`.
+    QMatrix(QMatrix),
 }
 
 impl BufferType {
@@ -384,6 +402,7 @@ impl BufferType {
             BufferType::EncMiscParameter(_) => bindings::VABufferType::VAEncMiscParameterBufferType,
 
             BufferType::ProcPipelineParameter(_) => bindings::VABufferType::VAProcPipelineParameterBufferType,
+            BufferType::QMatrix(_) => bindings::VABufferType::VAQMatrixBufferType,
         }
     }
 }
@@ -408,6 +427,8 @@ pub enum PictureParameter {
     AV1(av1::PictureParameterBufferAV1),
     /// Wrapper over VAPictureParameterBufferJPEGBaseline
     JPEGBaseline(jpeg_baseline::PictureParameterBufferJPEGBaseline),
+    /// Wrapper over VAEncPictureParameterBufferJPEG
+    EncJPEG(enc_jpeg::EncPictureParameterBufferJPEG),
 }
 
 /// Abstraction over the `SliceParameterBuffer` types we support
@@ -428,6 +449,8 @@ pub enum SliceParameter {
     AV1(av1::SliceParameterBufferAV1),
     /// Wrapper over VASliceParameterBufferJPEGBaseline
     JPEGBaseline(jpeg_baseline::SliceParameterBufferJPEGBaseline),
+    /// Wrapper over VAEncSliceParameterBufferJPEG
+    EncJpeg(enc_jpeg::EncSliceParameterBufferJPEG),
 }
 
 /// Abstraction over the `IQMatrixBuffer` types we support.
@@ -448,6 +471,12 @@ pub enum IQMatrix {
 pub enum HuffmanTable {
     /// Abstraction over `VAHuffmanTableBufferJPEGBaseline`
     JPEGBaseline(jpeg_baseline::HuffmanTableBufferJPEGBaseline),
+}
+
+/// Abstraction over the `QMatrix` types we support.
+pub enum QMatrix {
+    /// Abstraction over `VAQMatrixBufferJPEG`
+    JPEG(enc_jpeg::QMatrixBufferJPEG),
 }
 
 /// Abstraction over the `EncSequenceParameter` types we support.
