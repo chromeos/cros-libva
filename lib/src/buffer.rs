@@ -8,6 +8,7 @@ mod av1;
 mod enc_misc;
 mod h264;
 mod hevc;
+mod jpeg_baseline;
 mod mpeg2;
 mod vp8;
 mod vp9;
@@ -86,6 +87,10 @@ impl Buffer {
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
+                PictureParameter::JPEGBaseline(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::SliceParameter(ref mut slice_param) => match slice_param {
@@ -117,6 +122,10 @@ impl Buffer {
                     wrapper.inner_mut().as_mut_ptr() as *mut std::ffi::c_void,
                     std::mem::size_of::<bindings::VASliceParameterBufferAV1>(),
                 ),
+                SliceParameter::JPEGBaseline(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
             },
 
             BufferType::IQMatrix(ref mut iq_matrix) => match iq_matrix {
@@ -133,6 +142,17 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
                 IQMatrix::HEVC(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+                IQMatrix::JPEGBaseline(ref mut wrapper) => (
+                    wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of_val(wrapper.inner_mut()),
+                ),
+            },
+
+            BufferType::HuffmanTable(ref mut huffman_table) => match huffman_table {
+                HuffmanTable::JPEGBaseline(ref mut wrapper) => (
                     wrapper.inner_mut() as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
@@ -297,12 +317,14 @@ impl Drop for Buffer {
 
 /// Abstraction over `VABufferType`s.
 pub enum BufferType {
-    /// Abstraction over `VAPictureParameterBufferType`. Needed for MPEG2, VP8, VP9, H264.
+    /// Abstraction over `VAPictureParameterBufferType`. Needed for MPEG2, VP8, VP9, H264, JPEGBaseline.
     PictureParameter(PictureParameter),
-    /// Abstraction over `VASliceParameterBufferType`. Needed for MPEG2, VP8, VP9, H264.
+    /// Abstraction over `VASliceParameterBufferType`. Needed for MPEG2, VP8, VP9, H264, JPEGBaseline.
     SliceParameter(SliceParameter),
-    /// Abstraction over `VAIQMatrixBufferType`. Needed for VP8, H264.
+    /// Abstraction over `VAIQMatrixBufferType`. Needed for VP8, H264, JPEGBaseline.
     IQMatrix(IQMatrix),
+    /// Abstraction over `HuffmanTableBufferType`. Needed for JPEGBaseline.
+    HuffmanTable(HuffmanTable),
     /// Abstraction over `VAProbabilityDataBufferType`. Needed for VP8.
     Probability(vp8::ProbabilityDataBufferVP8),
     /// Abstraction over `VASliceDataBufferType`. Needed for VP9, H264.
@@ -328,6 +350,7 @@ impl BufferType {
             BufferType::PictureParameter(_) => bindings::VABufferType::VAPictureParameterBufferType,
             BufferType::SliceParameter(_) => bindings::VABufferType::VASliceParameterBufferType,
             BufferType::IQMatrix(_) => bindings::VABufferType::VAIQMatrixBufferType,
+            BufferType::HuffmanTable(_) => bindings::VABufferType::VAHuffmanTableBufferType,
             BufferType::Probability(_) => bindings::VABufferType::VAProbabilityBufferType,
             BufferType::SliceData { .. } => bindings::VABufferType::VASliceDataBufferType,
 
@@ -372,6 +395,8 @@ pub enum PictureParameter {
     HEVCScc(hevc::PictureParameterBufferHEVCScc),
     /// Wrapper over VADecPictureParameterBufferAV1
     AV1(av1::PictureParameterBufferAV1),
+    /// Wrapper over VAPictureParameterBufferJPEGBaseline
+    JPEGBaseline(jpeg_baseline::PictureParameterBufferJPEGBaseline),
 }
 
 /// Abstraction over the `SliceParameterBuffer` types we support
@@ -390,6 +415,8 @@ pub enum SliceParameter {
     HEVCRext(hevc::SliceParameterBufferHEVCRext),
     /// Wrapper over VASliceParameterBufferAV1
     AV1(av1::SliceParameterBufferAV1),
+    /// Wrapper over VASliceParameterBufferJPEGBaseline
+    JPEGBaseline(jpeg_baseline::SliceParameterBufferJPEGBaseline),
 }
 
 /// Abstraction over the `IQMatrixBuffer` types we support.
@@ -402,6 +429,14 @@ pub enum IQMatrix {
     H264(h264::IQMatrixBufferH264),
     /// Abstraction over `VAIQMatrixBufferHEVC`
     HEVC(hevc::IQMatrixBufferHEVC),
+    /// Abstraction over `VAIQMatrixBufferJPEGBaseline``
+    JPEGBaseline(jpeg_baseline::IQMatrixBufferJPEGBaseline),
+}
+
+/// Abstraction over the `HuffmanTable` types we support.
+pub enum HuffmanTable {
+    /// Abstraction over `VAHuffmanTableBufferJPEGBaseline`
+    JPEGBaseline(jpeg_baseline::HuffmanTableBufferJPEGBaseline),
 }
 
 /// Abstraction over the `EncSequenceParameter` types we support.
