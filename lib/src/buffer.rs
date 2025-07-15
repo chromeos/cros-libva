@@ -10,6 +10,7 @@ mod h264;
 mod hevc;
 mod jpeg_baseline;
 mod mpeg2;
+mod proc_pipeline;
 mod vp8;
 mod vp9;
 
@@ -17,7 +18,9 @@ pub use av1::*;
 pub use enc_misc::*;
 pub use h264::*;
 pub use hevc::*;
+pub use jpeg_baseline::*;
 pub use mpeg2::*;
+pub use proc_pipeline::*;
 pub use vp8::*;
 pub use vp9::*;
 
@@ -271,6 +274,10 @@ impl Buffer {
                     std::mem::size_of_val(wrapper.inner_mut()),
                 ),
             },
+            BufferType::ProcPipelineParameter(ref mut proc_pipeline_param) => (
+                proc_pipeline_param.inner_mut() as *mut _ as *mut std::ffi::c_void,
+                std::mem::size_of_val(proc_pipeline_param.inner_mut()),
+            ),
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -341,6 +348,8 @@ pub enum BufferType {
     EncCodedBuffer(usize),
     /// Abstraction over `VAEncMiscParameterBuffer`.
     EncMiscParameter(EncMiscParameter),
+    /// Abstraction over `VAProcPipelineParameterBuffer`.
+    ProcPipelineParameter(proc_pipeline::ProcPipelineParameterBuffer),
 }
 
 impl BufferType {
@@ -373,6 +382,8 @@ impl BufferType {
             BufferType::EncCodedBuffer(_) => bindings::VABufferType::VAEncCodedBufferType,
 
             BufferType::EncMiscParameter(_) => bindings::VABufferType::VAEncMiscParameterBufferType,
+
+            BufferType::ProcPipelineParameter(_) => bindings::VABufferType::VAProcPipelineParameterBufferType,
         }
     }
 }

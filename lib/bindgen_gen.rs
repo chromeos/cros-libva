@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 /// The allow list of VA functions, structures and enum values.
-const ALLOW_LIST_TYPE : &str = ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|.*JPEGBaseline.*|VACodedBufferSegment|.*AV1.*|VAEncMisc.*|VASurfaceDecodeMBErrors|VADecodeErrorType";
+const ALLOW_LIST_TYPE : &str = ".*ExternalBuffers.*|.*PRIME.*|.*MPEG2.*|.*VP8.*|.*VP9.*|.*H264.*|.*HEVC.*|.*JPEGBaseline.*|VACodedBufferSegment|.*AV1.*|VAEncMisc.*|VASurfaceDecodeMBErrors|VADecodeErrorType|.*VAProc.*";
 
 // The common bindgen builder for VA-API.
 pub fn vaapi_gen_builder(builder: bindgen::Builder) -> bindgen::Builder {
