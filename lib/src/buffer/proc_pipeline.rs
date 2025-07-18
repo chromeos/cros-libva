@@ -12,13 +12,8 @@ pub struct BlendState(bindings::VABlendState);
 
 impl BlendState {
     /// Creates the bindgen field
-    pub fn new(
-        flags: u32,
-        global_alpha: f32,
-        min_luma: f32,
-        max_luma: f32,
-    ) -> Self {
-        Self(bindings::VABlendState{
+    pub fn new(flags: u32, global_alpha: f32, min_luma: f32, max_luma: f32) -> Self {
+        Self(bindings::VABlendState {
             flags,
             global_alpha,
             min_luma,
@@ -39,7 +34,7 @@ impl ProcColorProperties {
         transfer_characteristics: u8,
         matrix_coefficients: u8,
     ) -> Self {
-        Self(bindings::VAProcColorProperties{
+        Self(bindings::VAProcColorProperties {
             chroma_sample_location,
             color_range,
             colour_primaries,
@@ -61,14 +56,10 @@ pub struct HdrMetaData(bindings::VAHdrMetaData);
 
 impl<'a> HdrMetaData {
     /// Creates the bindgen field
-    pub fn new(
-        metadata_type: u32,
-        metadata: Option<&'a [u8]>,
-        metadata_size: u32,
-    ) -> Self {
-        Self(bindings::VAHdrMetaData{
+    pub fn new(metadata_type: u32, metadata: Option<&'a [u8]>, metadata_size: u32) -> Self {
+        Self(bindings::VAHdrMetaData {
             metadata_type: metadata_type as _,
-            metadata:  metadata.map_or(ptr::null_mut(), |f| f.as_ptr() as *mut _),
+            metadata: metadata.map_or(ptr::null_mut(), |f| f.as_ptr() as *mut _),
             metadata_size,
             reserved: Default::default(),
         })
@@ -131,30 +122,65 @@ impl ProcPipelineParameterBuffer {
 
         slf.c_params = Box::new(bindings::VAProcPipelineParameterBuffer {
             surface,
-            surface_region: slf.surface_region.as_deref().map_or(ptr::null_mut(), |r| r as *const _ as *mut _),
+            surface_region: slf
+                .surface_region
+                .as_deref()
+                .map_or(ptr::null_mut(), |r| r as *const _ as *mut _),
             surface_color_standard: surface_color_standard as _,
-            output_region: slf.output_region.as_deref().map_or(ptr::null_mut(), |r| r as *const _ as *mut _),
+            output_region: slf
+                .output_region
+                .as_deref()
+                .map_or(ptr::null_mut(), |r| r as *const _ as *mut _),
             output_background_color,
             output_color_standard: output_color_standard as _,
             pipeline_flags,
             filter_flags,
-            filters: slf.filters.as_deref().map_or(ptr::null_mut(), |f| f.as_ptr() as *mut _),
+            filters: slf
+                .filters
+                .as_deref()
+                .map_or(ptr::null_mut(), |f| f.as_ptr() as *mut _),
             num_filters: slf.filters.as_ref().map_or(0, |f| f.len() as u32),
-            forward_references: slf.forward_references.as_deref().map_or(ptr::null_mut(), |r| r.as_ptr() as *mut _),
-            num_forward_references: slf.forward_references.as_ref().map_or(0, |f| f.len() as u32),
-            backward_references: slf.backward_references.as_deref().map_or(ptr::null_mut(), |r| r.as_ptr() as *mut _),
-            num_backward_references: slf.backward_references.as_ref().map_or(0, |b| b.len() as u32),
+            forward_references: slf
+                .forward_references
+                .as_deref()
+                .map_or(ptr::null_mut(), |r| r.as_ptr() as *mut _),
+            num_forward_references: slf
+                .forward_references
+                .as_ref()
+                .map_or(0, |f| f.len() as u32),
+            backward_references: slf
+                .backward_references
+                .as_deref()
+                .map_or(ptr::null_mut(), |r| r.as_ptr() as *mut _),
+            num_backward_references: slf
+                .backward_references
+                .as_ref()
+                .map_or(0, |b| b.len() as u32),
             rotation_state,
-            blend_state: slf.blend_state.as_deref().map_or(ptr::null(), |b| b.as_ptr() as *const bindings::VABlendState),
+            blend_state: slf
+                .blend_state
+                .as_deref()
+                .map_or(ptr::null(), |b| b.as_ptr() as *const bindings::VABlendState),
             mirror_state,
-            additional_outputs: slf.additional_outputs.as_deref().map_or(ptr::null_mut(), |a| a.as_ptr() as *mut _),
-            num_additional_outputs: slf.additional_outputs.as_ref().map_or(0, |a| a.len() as u32),
+            additional_outputs: slf
+                .additional_outputs
+                .as_deref()
+                .map_or(ptr::null_mut(), |a| a.as_ptr() as *mut _),
+            num_additional_outputs: slf
+                .additional_outputs
+                .as_ref()
+                .map_or(0, |a| a.len() as u32),
             input_surface_flag,
             output_surface_flag,
             input_color_properties: input_color_properties.0,
             output_color_properties: output_color_properties.0,
             processing_mode,
-            output_hdr_metadata: slf.output_hdr_metadata.as_deref().map_or(ptr::null_mut(), |o| o.as_ptr() as *mut bindings::VAHdrMetaData),
+            output_hdr_metadata: slf
+                .output_hdr_metadata
+                .as_deref()
+                .map_or(ptr::null_mut(), |o| {
+                    o.as_ptr() as *mut bindings::VAHdrMetaData
+                }),
             va_reserved: Default::default(),
         });
 
