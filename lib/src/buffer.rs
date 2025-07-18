@@ -401,7 +401,9 @@ impl BufferType {
 
             BufferType::EncMiscParameter(_) => bindings::VABufferType::VAEncMiscParameterBufferType,
 
-            BufferType::ProcPipelineParameter(_) => bindings::VABufferType::VAProcPipelineParameterBufferType,
+            BufferType::ProcPipelineParameter(_) => {
+                bindings::VABufferType::VAProcPipelineParameterBufferType
+            }
             BufferType::QMatrix(_) => bindings::VABufferType::VAQMatrixBufferType,
         }
     }

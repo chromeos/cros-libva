@@ -7,7 +7,9 @@
 use crate::bindings;
 
 /// Wrapper over the `components` bindgen field in `VAPictureParameterBufferJPEGBaseline`.
-pub struct PictureParameterBufferJPEGBaselineComponent(bindings::_VAPictureParameterBufferJPEGBaseline__bindgen_ty_1);
+pub struct PictureParameterBufferJPEGBaselineComponent(
+    bindings::_VAPictureParameterBufferJPEGBaseline__bindgen_ty_1,
+);
 
 impl PictureParameterBufferJPEGBaselineComponent {
     /// Creates the bindgen field.
@@ -18,12 +20,14 @@ impl PictureParameterBufferJPEGBaselineComponent {
         v_sampling_factor: u8,
         quantiser_table_selector: u8,
     ) -> Self {
-        Self(bindings::_VAPictureParameterBufferJPEGBaseline__bindgen_ty_1 {
-            component_id,
-            h_sampling_factor,
-            v_sampling_factor,
-            quantiser_table_selector,
-        })
+        Self(
+            bindings::_VAPictureParameterBufferJPEGBaseline__bindgen_ty_1 {
+                component_id,
+                h_sampling_factor,
+                v_sampling_factor,
+                quantiser_table_selector,
+            },
+        )
     }
 
     /// Returns the inner FFI type. Useful for testing purposes.
@@ -69,21 +73,21 @@ impl PictureParameterBufferJPEGBaseline {
 }
 
 /// Wrapper over the `components` bindgen field in `VASliceParameterBufferJPEGBaseline`.
-pub struct VASliceParameterBufferJPEGBaselineComponent(bindings::_VASliceParameterBufferJPEGBaseline__bindgen_ty_1);
+pub struct VASliceParameterBufferJPEGBaselineComponent(
+    bindings::_VASliceParameterBufferJPEGBaseline__bindgen_ty_1,
+);
 
 impl VASliceParameterBufferJPEGBaselineComponent {
     /// Creates the bindgen field.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        component_selector: u8,
-        dc_table_selector: u8,
-        ac_table_selector: u8,
-    ) -> Self {
-        Self(bindings::_VASliceParameterBufferJPEGBaseline__bindgen_ty_1 {
-            component_selector,
-            dc_table_selector,
-            ac_table_selector,
-        })
+    pub fn new(component_selector: u8, dc_table_selector: u8, ac_table_selector: u8) -> Self {
+        Self(
+            bindings::_VASliceParameterBufferJPEGBaseline__bindgen_ty_1 {
+                component_selector,
+                dc_table_selector,
+                ac_table_selector,
+            },
+        )
     }
 
     /// Returns the inner FFI type. Useful for testing purposes.
@@ -160,7 +164,9 @@ impl IQMatrixBufferJPEGBaseline {
 }
 
 /// Wrapper over the `huffman_table` bindgen field in `VAHuffmanTableBufferJPEGBaseline`.
-pub struct HuffmanTableBufferJPEGBaselineHuffmanTable(bindings::_VAHuffmanTableBufferJPEGBaseline__bindgen_ty_1);
+pub struct HuffmanTableBufferJPEGBaselineHuffmanTable(
+    bindings::_VAHuffmanTableBufferJPEGBaseline__bindgen_ty_1,
+);
 
 impl HuffmanTableBufferJPEGBaselineHuffmanTable {
     /// Creates the bindgen field.

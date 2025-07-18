@@ -17,19 +17,20 @@ impl PicFlags {
         interleaved: u32,
         differential: u32,
     ) -> Self {
-        let _bitfield_1 = bindings::_VAEncPictureParameterBufferJPEG__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
-            profile,
-            progressive,
-            huffman,
-            interleaved,
-            differential,
-        );
+        let _bitfield_1 =
+            bindings::_VAEncPictureParameterBufferJPEG__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(
+                profile,
+                progressive,
+                huffman,
+                interleaved,
+                differential,
+            );
         Self(bindings::_VAEncPictureParameterBufferJPEG__bindgen_ty_1 {
             bits: bindings::_VAEncPictureParameterBufferJPEG__bindgen_ty_1__bindgen_ty_1 {
                 _bitfield_align_1: Default::default(),
                 _bitfield_1,
                 __bindgen_padding_0: Default::default(),
-            }
+            },
         })
     }
 }
@@ -56,7 +57,7 @@ impl EncPictureParameterBufferJPEG {
             reconstructed_picture,
             picture_width,
             picture_height,
-            coded_buf ,
+            coded_buf,
             pic_flags: pic_flags.0,
             sample_bit_depth,
             num_scan,
@@ -79,15 +80,13 @@ impl EncPictureParameterBufferJPEG {
 }
 
 /// Wrapper over the `components` bindgen field in `VAEncSliceParameterBufferJPEG`.
-pub struct EncSliceParameterBufferJPEGComponent(bindings::_VAEncSliceParameterBufferJPEG__bindgen_ty_1);
+pub struct EncSliceParameterBufferJPEGComponent(
+    bindings::_VAEncSliceParameterBufferJPEG__bindgen_ty_1,
+);
 
 impl EncSliceParameterBufferJPEGComponent {
     /// Creates the bindgen field.
-    pub fn new(
-        component_selector: u8,
-        dc_table_selector: u8,
-        ac_table_selector: u8,
-    ) -> Self {
+    pub fn new(component_selector: u8, dc_table_selector: u8, ac_table_selector: u8) -> Self {
         Self(bindings::_VAEncSliceParameterBufferJPEG__bindgen_ty_1 {
             component_selector,
             dc_table_selector,
