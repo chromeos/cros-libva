@@ -83,6 +83,14 @@ impl Context {
         Buffer::new(Rc::clone(self), type_)
     }
 
+    /// Create a new buffer from a `BorrowedBufferType`.
+    pub fn create_buffer_borrowed(
+        self: &Rc<Self>,
+        type_: crate::buffer::BorrowedBufferType<'_>,
+    ) -> Result<Buffer, VaError> {
+        Buffer::new_borrowed(Rc::clone(self), type_)
+    }
+
     /// Create a new buffer of type `type_`.
     pub fn create_enc_coded(self: &Rc<Self>, size: usize) -> Result<EncCodedBuffer, VaError> {
         EncCodedBuffer::new(Rc::clone(self), size)

@@ -332,6 +332,74 @@ impl Buffer {
     }
 }
 
+/// A borrowed version of `BufferType` that avoids copying data.
+pub enum BorrowedBufferType<'a> {
+    /// Abstraction over `VASliceDataBufferType` that uses borrowed data.
+    SliceData(&'a [u8]),
+    /// Abstraction over `VAEncPackedHeaderDataBufferType` that uses borrowed data.
+    EncPackedHeaderData(&'a [u8]),
+    /// Abstraction over `VAProtectedSliceDataBufferType` that uses borrowed data.
+    ProtectedSliceDataBuffer(&'a [u8]),
+}
+
+impl<'a> BorrowedBufferType<'a> {
+    /// Returns the inner FFI buffer type.
+    pub(crate) fn inner(&self) -> bindings::VABufferType::Type {
+        match self {
+            BorrowedBufferType::SliceData(_) => bindings::VABufferType::VASliceDataBufferType,
+            BorrowedBufferType::EncPackedHeaderData(_) => {
+                bindings::VABufferType::VAEncPackedHeaderDataBufferType
+            }
+            BorrowedBufferType::ProtectedSliceDataBuffer(_) => {
+                bindings::VABufferType::VAProtectedSliceDataBufferType
+            }
+        }
+    }
+}
+
+impl Buffer {
+    /// Creates a new buffer from a `BorrowedBufferType`.
+    pub(crate) fn new_borrowed(
+        context: Rc<Context>,
+        type_: BorrowedBufferType,
+    ) -> Result<Self, VaError> {
+        let mut buffer_id = 0;
+
+        let nb_elements = 1;
+
+        let (ptr, size) = match type_ {
+            BorrowedBufferType::SliceData(data) => {
+                (data.as_ptr() as *mut std::ffi::c_void, data.len())
+            }
+            BorrowedBufferType::EncPackedHeaderData(data) => {
+                (data.as_ptr() as *mut std::ffi::c_void, data.len())
+            }
+            BorrowedBufferType::ProtectedSliceDataBuffer(data) => {
+                (data.as_ptr() as *mut std::ffi::c_void, data.len())
+            }
+        };
+
+        // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
+        // be correct.
+        va_check(unsafe {
+            bindings::vaCreateBuffer(
+                context.display().handle(),
+                context.id(),
+                type_.inner(),
+                size as u32,
+                nb_elements as u32,
+                ptr,
+                &mut buffer_id,
+            )
+        })?;
+
+        Ok(Self {
+            context,
+            id: buffer_id,
+        })
+    }
+}
+
 impl Drop for Buffer {
     fn drop(&mut self) {
         // Safe because `self` represents a valid buffer, created with
