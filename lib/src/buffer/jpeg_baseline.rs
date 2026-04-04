@@ -57,6 +57,7 @@ impl PictureParameterBufferJPEGBaseline {
             num_components,
             color_space,
             rotation,
+            #[cfg(libva_1_20_or_higher)]
             crop_rectangle,
             va_reserved: Default::default(),
         }))

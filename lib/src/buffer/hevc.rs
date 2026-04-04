@@ -1142,7 +1142,9 @@ impl EncSliceParameterBufferHEVC {
             slice_beta_offset_div2,
             slice_tc_offset_div2,
             slice_fields,
+            #[cfg(libva_1_10_or_higher)]
             pred_weight_table_bit_offset,
+            #[cfg(libva_1_10_or_higher)]
             pred_weight_table_bit_length,
             va_reserved: Default::default(),
         }))
