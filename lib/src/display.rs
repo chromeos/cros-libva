@@ -138,7 +138,7 @@ impl Display {
     }
 
     /// Returns the handle of this display.
-    pub(crate) fn handle(&self) -> bindings::VADisplay {
+    pub fn handle(&self) -> bindings::VADisplay {
         self.handle
     }
 

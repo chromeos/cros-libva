@@ -74,7 +74,7 @@ impl Context {
     }
 
     /// Returns the ID of this context.
-    pub(crate) fn id(&self) -> bindings::VAContextID {
+    pub fn id(&self) -> bindings::VAContextID {
         self.id
     }
 
