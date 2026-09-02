@@ -76,6 +76,62 @@ pub trait ExternalBufferDescriptor {
     fn va_surface_attribute(&mut self) -> Self::DescriptorAttribute;
 }
 
+/// Access mode to request when exporting a surface as DRM PRIME.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum DrmPrimeExportAccess {
+    /// The exported surface will only be read by the consumer.
+    #[default]
+    ReadOnly,
+    /// The exported surface will only be written by the consumer.
+    WriteOnly,
+    /// The exported surface may be read and written by the consumer.
+    ReadWrite,
+}
+
+impl DrmPrimeExportAccess {
+    fn as_va_flags(self) -> u32 {
+        match self {
+            Self::ReadOnly => bindings::VA_EXPORT_SURFACE_READ_ONLY,
+            Self::WriteOnly => bindings::VA_EXPORT_SURFACE_WRITE_ONLY,
+            Self::ReadWrite => bindings::VA_EXPORT_SURFACE_READ_WRITE,
+        }
+    }
+}
+
+/// Layer layout to request when exporting a surface as DRM PRIME.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum DrmPrimeExportLayers {
+    /// Export the surface as composed layers.
+    #[default]
+    Composed,
+    /// Export the surface as separate layers.
+    Separate,
+}
+
+impl DrmPrimeExportLayers {
+    fn as_va_flags(self) -> u32 {
+        match self {
+            Self::Composed => bindings::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
+            Self::Separate => bindings::VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+        }
+    }
+}
+
+/// Options for exporting a surface as DRM PRIME.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct DrmPrimeExportOptions {
+    /// Access mode requested for the exported surface.
+    pub access: DrmPrimeExportAccess,
+    /// Layer layout requested for the exported surface.
+    pub layers: DrmPrimeExportLayers,
+}
+
+impl DrmPrimeExportOptions {
+    fn as_va_flags(self) -> u32 {
+        self.access.as_va_flags() | self.layers.as_va_flags()
+    }
+}
+
 impl<T> SurfaceMemoryDescriptor for T
 where
     T: ExternalBufferDescriptor,
@@ -348,6 +404,14 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
 
     /// Returns a PRIME descriptor for this surface.
     pub fn export_prime(&self) -> Result<DrmPrimeSurfaceDescriptor, VaError> {
+        self.export_prime_with_options(DrmPrimeExportOptions::default())
+    }
+
+    /// Returns a PRIME descriptor for this surface with explicit export options.
+    pub fn export_prime_with_options(
+        &self,
+        options: DrmPrimeExportOptions,
+    ) -> Result<DrmPrimeSurfaceDescriptor, VaError> {
         let mut desc: bindings::VADRMPRIMESurfaceDescriptor = Default::default();
 
         va_check(unsafe {
@@ -355,15 +419,17 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
                 self.display.handle(),
                 self.id(),
                 bindings::VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-                bindings::VA_EXPORT_SURFACE_READ_ONLY | bindings::VA_EXPORT_SURFACE_COMPOSED_LAYERS,
+                options.as_va_flags(),
                 &mut desc as *mut _ as *mut c_void,
             )
         })?;
 
-        // We do not use a `From<VADRMPRIMESurfaceDescriptor>` implementation as this would allow
-        // to create "safe" descriptors outside of this method and thus from made up values,
-        // violating the safety guarantee that our FDs are legit.
+        Ok(DrmPrimeSurfaceDescriptor::from_exported_raw(desc))
+    }
+}
 
+impl DrmPrimeSurfaceDescriptor {
+    fn from_exported_raw(desc: bindings::VADRMPRIMESurfaceDescriptor) -> Self {
         let objects = (0..desc.num_objects as usize)
             // Make sure we don't go out of bounds.
             .take(4)
@@ -397,13 +463,13 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
             })
             .collect();
 
-        Ok(DrmPrimeSurfaceDescriptor {
+        DrmPrimeSurfaceDescriptor {
             fourcc: desc.fourcc,
             width: desc.width,
             height: desc.height,
             objects,
             layers,
-        })
+        }
     }
 }
 
@@ -449,4 +515,40 @@ pub struct DrmPrimeSurfaceDescriptor {
     pub height: u32,
     pub objects: Vec<DrmPrimeSurfaceDescriptorObject>,
     pub layers: Vec<DrmPrimeSurfaceDescriptorLayer>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_drm_prime_export_options_match_export_prime() {
+        assert_eq!(
+            DrmPrimeExportOptions::default().as_va_flags(),
+            bindings::VA_EXPORT_SURFACE_READ_ONLY
+                | bindings::VA_EXPORT_SURFACE_COMPOSED_LAYERS
+        );
+    }
+
+    #[test]
+    fn drm_prime_export_options_encode_access_and_layers() {
+        assert_eq!(
+            DrmPrimeExportOptions {
+                access: DrmPrimeExportAccess::WriteOnly,
+                layers: DrmPrimeExportLayers::Separate,
+            }
+            .as_va_flags(),
+            bindings::VA_EXPORT_SURFACE_WRITE_ONLY
+                | bindings::VA_EXPORT_SURFACE_SEPARATE_LAYERS
+        );
+        assert_eq!(
+            DrmPrimeExportOptions {
+                access: DrmPrimeExportAccess::ReadWrite,
+                layers: DrmPrimeExportLayers::Composed,
+            }
+            .as_va_flags(),
+            bindings::VA_EXPORT_SURFACE_READ_WRITE
+                | bindings::VA_EXPORT_SURFACE_COMPOSED_LAYERS
+        );
+    }
 }
