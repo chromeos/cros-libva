@@ -100,23 +100,35 @@ impl PictureParameterBufferVP9 {
     ) -> Self {
         let pic_fields = pic_fields.0;
 
-        Self(Box::new(bindings::VADecPictureParameterBufferVP9 {
-            frame_width,
-            frame_height,
-            reference_frames,
-            pic_fields,
-            filter_level,
-            sharpness_level,
-            log2_tile_rows,
-            log2_tile_columns,
-            frame_header_length_in_bytes,
-            first_partition_size,
-            mb_segment_tree_probs,
-            segment_pred_probs,
-            profile,
-            bit_depth,
-            va_reserved: Default::default(),
-        }))
+        // Zero the whole allocation first so compiler padding (e.g. the byte
+        // before `first_partition_size`) is deterministic, then set fields
+        // individually (a whole-struct write would copy the source value's
+        // uninitialized padding back in).
+        let mut buf = Box::<bindings::VADecPictureParameterBufferVP9>::new_uninit();
+        unsafe {
+            std::ptr::write_bytes(
+                buf.as_mut_ptr().cast::<u8>(),
+                0,
+                core::mem::size_of::<bindings::VADecPictureParameterBufferVP9>(),
+            );
+            let p = buf.as_mut_ptr();
+            (*p).frame_width = frame_width;
+            (*p).frame_height = frame_height;
+            (*p).reference_frames = reference_frames;
+            (*p).pic_fields = pic_fields;
+            (*p).filter_level = filter_level;
+            (*p).sharpness_level = sharpness_level;
+            (*p).log2_tile_rows = log2_tile_rows;
+            (*p).log2_tile_columns = log2_tile_columns;
+            (*p).frame_header_length_in_bytes = frame_header_length_in_bytes;
+            (*p).first_partition_size = first_partition_size;
+            (*p).mb_segment_tree_probs = mb_segment_tree_probs;
+            (*p).segment_pred_probs = segment_pred_probs;
+            (*p).profile = profile;
+            (*p).bit_depth = bit_depth;
+            (*p).va_reserved = Default::default();
+        }
+        Self(unsafe { buf.assume_init() })
     }
 
     pub(crate) fn inner_mut(&mut self) -> &mut bindings::VADecPictureParameterBufferVP9 {
