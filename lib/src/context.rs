@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 use log::error;
 
@@ -19,7 +20,7 @@ use crate::VaError;
 
 /// A VA context for a particular [`Display`].
 pub struct Context {
-    display: Rc<Display>,
+    display: Arc<Display>,
     id: bindings::VAContextID,
 }
 
@@ -27,7 +28,7 @@ impl Context {
     /// Creates a Context by wrapping around a `vaCreateContext` call. This is just a helper for
     /// [`Display::create_context`].
     pub(crate) fn new<D: SurfaceMemoryDescriptor>(
-        display: Rc<Display>,
+        display: Arc<Display>,
         config: &Config,
         coded_width: u32,
         coded_height: u32,
@@ -69,7 +70,7 @@ impl Context {
     }
 
     /// Returns a shared reference to the [`Display`] used by this context.
-    pub fn display(&self) -> &Rc<Display> {
+    pub fn display(&self) -> &Arc<Display> {
         &self.display
     }
 

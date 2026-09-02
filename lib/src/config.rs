@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use log::error;
 use thiserror::Error;
@@ -16,7 +16,7 @@ use crate::VaError;
 
 /// A configuration for a given [`Display`].
 pub struct Config {
-    display: Rc<Display>,
+    display: Arc<Display>,
     id: bindings::VAConfigID,
 }
 
@@ -32,7 +32,7 @@ impl Config {
     /// Creates a Config by wrapping around the `vaCreateConfig` call. This is just a helper for
     /// [`Display::create_config`].
     pub(crate) fn new(
-        display: Rc<Display>,
+        display: Arc<Display>,
         mut attrs: Vec<bindings::VAConfigAttrib>,
         profile: bindings::VAProfile::Type,
         entrypoint: bindings::VAEntrypoint::Type,

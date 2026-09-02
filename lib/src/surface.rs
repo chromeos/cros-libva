@@ -6,7 +6,7 @@ use std::any::Any;
 use std::os::fd::FromRawFd;
 use std::os::fd::OwnedFd;
 use std::os::raw::c_void;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::bindings;
 use crate::display::Display;
@@ -122,7 +122,7 @@ pub struct SurfaceDecodeMBError {
 
 /// An owned VA surface that is tied to a particular `Display`.
 pub struct Surface<D: SurfaceMemoryDescriptor> {
-    display: Rc<Display>,
+    display: Arc<Display>,
     id: bindings::VASurfaceID,
     descriptor: D,
     width: u32,
@@ -195,7 +195,7 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
     /// Create `Surfaces` by wrapping around a `vaCreateSurfaces` call. This is just a helper for
     /// [`Display::create_surfaces`].
     pub(crate) fn new(
-        display: Rc<Display>,
+        display: Arc<Display>,
         rt_format: u32,
         va_fourcc: Option<u32>,
         width: u32,
@@ -239,7 +239,7 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
                 )
             }) {
                 Ok(()) => surfaces.push(Self {
-                    display: Rc::clone(&display),
+                    display: Arc::clone(&display),
                     id: surface_id,
                     descriptor,
                     width,
@@ -252,7 +252,7 @@ impl<D: SurfaceMemoryDescriptor> Surface<D> {
         Ok(surfaces)
     }
 
-    pub(crate) fn display(&self) -> &Rc<Display> {
+    pub(crate) fn display(&self) -> &Arc<Display> {
         &self.display
     }
 
