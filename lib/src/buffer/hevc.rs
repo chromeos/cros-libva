@@ -356,6 +356,35 @@ impl PictureParameterBufferHEVCRext {
     }
 }
 
+/// A wrapper over `VAPictureParameterBufferHEVCExtension` FFI type.
+///
+/// For REXT/SCC profiles the driver expects the picture parameter buffer to be
+/// this full extension size (base + rext + scc), while still being attached as
+/// a plain `VAPictureParameterBufferType` (matches FFmpeg vaapi_hevc.c).
+pub struct PictureParameterBufferHEVCExtension(
+    Box<bindings::VAPictureParameterBufferHEVCExtension>,
+);
+
+impl PictureParameterBufferHEVCExtension {
+    /// Creates the wrapper. The SCC section is zeroed (Rext streams).
+    pub fn new(base: &PictureParameterBufferHEVC, rext: &PictureParameterBufferHEVCRext) -> Self {
+        Self(Box::new(bindings::VAPictureParameterBufferHEVCExtension {
+            base: *base.inner(),
+            rext: *rext.inner(),
+            scc: Default::default(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAPictureParameterBufferHEVCExtension {
+        self.0.as_mut()
+    }
+
+    /// Returns the inner FFI type. Useful for testing purposes.
+    pub fn inner(&self) -> &bindings::VAPictureParameterBufferHEVCExtension {
+        self.0.as_ref()
+    }
+}
+
 /// Wrapper over the `screen_content_pic_fields` bindgen field in `VAPictureParameterBufferHEVCScc`.
 pub struct HevcScreenContentPicFields(bindings::_VAPictureParameterBufferHEVCScc__bindgen_ty_1);
 
@@ -525,38 +554,40 @@ impl SliceParameterBufferHEVC {
     ) -> Self {
         let long_slice_flags = long_slice_flags.0;
 
-        Self(Box::new(bindings::VASliceParameterBufferHEVC {
-            slice_data_size,
-            slice_data_offset,
-            slice_data_flag,
-            slice_data_byte_offset,
-            slice_segment_address,
-            RefPicList: ref_pic_list,
-            LongSliceFlags: long_slice_flags,
-            collocated_ref_idx,
-            num_ref_idx_l0_active_minus1,
-            num_ref_idx_l1_active_minus1,
-            slice_qp_delta,
-            slice_cb_qp_offset,
-            slice_cr_qp_offset,
-            slice_beta_offset_div2,
-            slice_tc_offset_div2,
-            luma_log2_weight_denom,
-            delta_chroma_log2_weight_denom,
-            delta_luma_weight_l0,
-            luma_offset_l0,
-            delta_chroma_weight_l0,
-            ChromaOffsetL0: chroma_offset_l0,
-            delta_luma_weight_l1,
-            luma_offset_l1,
-            delta_chroma_weight_l1,
-            ChromaOffsetL1: chroma_offset_l1,
-            five_minus_max_num_merge_cand,
-            num_entry_point_offsets,
-            entry_offset_to_subset_array,
-            slice_data_num_emu_prevn_bytes,
-            va_reserved: Default::default(),
-        }))
+        // Zero-initialized so struct padding bytes are 0 (drivers may compare
+        // buffer contents byte-wise; matches FFmpeg's memset behavior).
+        let mut buf: bindings::VASliceParameterBufferHEVC = unsafe { std::mem::zeroed() };
+        buf.slice_data_size = slice_data_size;
+        buf.slice_data_offset = slice_data_offset;
+        buf.slice_data_flag = slice_data_flag;
+        buf.slice_data_byte_offset = slice_data_byte_offset;
+        buf.slice_segment_address = slice_segment_address;
+        buf.RefPicList = ref_pic_list;
+        buf.LongSliceFlags = long_slice_flags;
+        buf.collocated_ref_idx = collocated_ref_idx;
+        buf.num_ref_idx_l0_active_minus1 = num_ref_idx_l0_active_minus1;
+        buf.num_ref_idx_l1_active_minus1 = num_ref_idx_l1_active_minus1;
+        buf.slice_qp_delta = slice_qp_delta;
+        buf.slice_cb_qp_offset = slice_cb_qp_offset;
+        buf.slice_cr_qp_offset = slice_cr_qp_offset;
+        buf.slice_beta_offset_div2 = slice_beta_offset_div2;
+        buf.slice_tc_offset_div2 = slice_tc_offset_div2;
+        buf.luma_log2_weight_denom = luma_log2_weight_denom;
+        buf.delta_chroma_log2_weight_denom = delta_chroma_log2_weight_denom;
+        buf.delta_luma_weight_l0 = delta_luma_weight_l0;
+        buf.luma_offset_l0 = luma_offset_l0;
+        buf.delta_chroma_weight_l0 = delta_chroma_weight_l0;
+        buf.ChromaOffsetL0 = chroma_offset_l0;
+        buf.delta_luma_weight_l1 = delta_luma_weight_l1;
+        buf.luma_offset_l1 = luma_offset_l1;
+        buf.delta_chroma_weight_l1 = delta_chroma_weight_l1;
+        buf.ChromaOffsetL1 = chroma_offset_l1;
+        buf.five_minus_max_num_merge_cand = five_minus_max_num_merge_cand;
+        buf.num_entry_point_offsets = num_entry_point_offsets;
+        buf.entry_offset_to_subset_array = entry_offset_to_subset_array;
+        buf.slice_data_num_emu_prevn_bytes = slice_data_num_emu_prevn_bytes;
+
+        Self(Box::new(buf))
     }
 
     /// Set this slice as the last one after creation. Implementations may only
@@ -625,16 +656,20 @@ impl SliceParameterBufferHEVCRext {
     ) -> Self {
         let slice_ext_flags = slice_ext_flags.0;
 
-        Self(Box::new(bindings::VASliceParameterBufferHEVCRext {
-            luma_offset_l0,
-            ChromaOffsetL0: chroma_offset_l0,
-            luma_offset_l1,
-            ChromaOffsetL1: chroma_offset_l1,
-            slice_ext_flags,
-            slice_act_y_qp_offset,
-            slice_act_cb_qp_offset,
-            slice_act_cr_qp_offset,
-        }))
+        // Zero-init so alignment padding (the byte before va_reserved) is
+        // deterministic; iHD compares the whole buffer against FFmpeg's, which
+        // zero-fills it.
+        let mut buf: bindings::VASliceParameterBufferHEVCRext = unsafe { std::mem::zeroed() };
+        buf.luma_offset_l0 = luma_offset_l0;
+        buf.ChromaOffsetL0 = chroma_offset_l0;
+        buf.luma_offset_l1 = luma_offset_l1;
+        buf.ChromaOffsetL1 = chroma_offset_l1;
+        buf.slice_ext_flags = slice_ext_flags;
+        buf.slice_act_y_qp_offset = slice_act_y_qp_offset;
+        buf.slice_act_cb_qp_offset = slice_act_cb_qp_offset;
+        buf.slice_act_cr_qp_offset = slice_act_cr_qp_offset;
+
+        Self(Box::new(buf))
     }
 
     pub(crate) fn inner_mut(&mut self) -> &mut bindings::VASliceParameterBufferHEVCRext {
@@ -643,6 +678,32 @@ impl SliceParameterBufferHEVCRext {
 
     /// Returns the inner FFI type. Useful for testing purposes.
     pub fn inner(&self) -> &bindings::VASliceParameterBufferHEVCRext {
+        self.0.as_ref()
+    }
+}
+
+/// A wrapper over `VASliceParameterBufferHEVCExtension` FFI type.
+///
+/// For REXT/SCC profiles the driver expects the slice parameter buffer to be
+/// this full extension size (base + rext), attached as a plain
+/// `VASliceParameterBufferType` (matches FFmpeg vaapi_hevc.c).
+pub struct SliceParameterBufferHEVCExtension(Box<bindings::VASliceParameterBufferHEVCExtension>);
+
+impl SliceParameterBufferHEVCExtension {
+    /// Creates the wrapper.
+    pub fn new(base: &SliceParameterBufferHEVC, rext: &SliceParameterBufferHEVCRext) -> Self {
+        Self(Box::new(bindings::VASliceParameterBufferHEVCExtension {
+            base: *base.inner(),
+            rext: *rext.inner(),
+        }))
+    }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut bindings::VASliceParameterBufferHEVCExtension {
+        self.0.as_mut()
+    }
+
+    /// Returns the inner FFI type. Useful for testing purposes.
+    pub fn inner(&self) -> &bindings::VASliceParameterBufferHEVCExtension {
         self.0.as_ref()
     }
 }

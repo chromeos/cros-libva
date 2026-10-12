@@ -161,26 +161,30 @@ impl PictureParameterBufferH264 {
         let seq_fields = seq_fields.0;
         let pic_fields = pic_fields.0;
 
-        Self(Box::new(bindings::VAPictureParameterBufferH264 {
-            CurrPic: curr_pic.0,
-            ReferenceFrames: reference_frames,
-            picture_width_in_mbs_minus1,
-            picture_height_in_mbs_minus1,
-            bit_depth_luma_minus8,
-            bit_depth_chroma_minus8,
-            num_ref_frames,
-            seq_fields,
-            num_slice_groups_minus1,
-            slice_group_map_type,
-            slice_group_change_rate_minus1,
-            pic_init_qp_minus26,
-            pic_init_qs_minus26,
-            chroma_qp_index_offset,
-            second_chroma_qp_index_offset,
-            pic_fields,
-            frame_num,
-            va_reserved: Default::default(),
-        }))
+        // Zero-initialize first: Rust struct literals leave implicit C padding
+        // bytes (e.g. between num_ref_frames and seq_fields) uninitialized,
+        // and VA reserved/padding bytes must be zero (FFmpeg memsets its
+        // buffers). Uninitialized padding leaked garbage to the driver.
+        let mut buf = unsafe { std::mem::zeroed::<bindings::VAPictureParameterBufferH264>() };
+        buf.CurrPic = curr_pic.0;
+        buf.ReferenceFrames = reference_frames;
+        buf.picture_width_in_mbs_minus1 = picture_width_in_mbs_minus1;
+        buf.picture_height_in_mbs_minus1 = picture_height_in_mbs_minus1;
+        buf.bit_depth_luma_minus8 = bit_depth_luma_minus8;
+        buf.bit_depth_chroma_minus8 = bit_depth_chroma_minus8;
+        buf.num_ref_frames = num_ref_frames;
+        buf.seq_fields = seq_fields;
+        buf.num_slice_groups_minus1 = num_slice_groups_minus1;
+        buf.slice_group_map_type = slice_group_map_type;
+        buf.slice_group_change_rate_minus1 = slice_group_change_rate_minus1;
+        buf.pic_init_qp_minus26 = pic_init_qp_minus26;
+        buf.pic_init_qs_minus26 = pic_init_qs_minus26;
+        buf.chroma_qp_index_offset = chroma_qp_index_offset;
+        buf.second_chroma_qp_index_offset = second_chroma_qp_index_offset;
+        buf.pic_fields = pic_fields;
+        buf.frame_num = frame_num;
+
+        Self(Box::new(buf))
     }
 
     pub(crate) fn inner_mut(&mut self) -> &mut bindings::VAPictureParameterBufferH264 {
@@ -311,39 +315,40 @@ impl SliceParameterBufferH264 {
         let ref_pic_list_0 = ref_pic_list_0.map(|pic| pic.0);
         let ref_pic_list_1 = ref_pic_list_1.map(|pic| pic.0);
 
-        let buf = bindings::VASliceParameterBufferH264 {
-            slice_data_size,
-            slice_data_offset,
-            slice_data_flag,
-            slice_data_bit_offset,
-            first_mb_in_slice,
-            slice_type,
-            direct_spatial_mv_pred_flag,
-            num_ref_idx_l0_active_minus1,
-            num_ref_idx_l1_active_minus1,
-            cabac_init_idc,
-            slice_qp_delta,
-            disable_deblocking_filter_idc,
-            slice_alpha_c0_offset_div2,
-            slice_beta_offset_div2,
-            RefPicList0: ref_pic_list_0,
-            RefPicList1: ref_pic_list_1,
-            luma_log2_weight_denom,
-            chroma_log2_weight_denom,
-            luma_weight_l0_flag,
-            luma_weight_l0,
-            luma_offset_l0,
-            chroma_weight_l0_flag,
-            chroma_weight_l0,
-            chroma_offset_l0,
-            luma_weight_l1_flag,
-            luma_weight_l1,
-            luma_offset_l1,
-            chroma_weight_l1_flag,
-            chroma_weight_l1,
-            chroma_offset_l1,
-            va_reserved: Default::default(),
-        };
+        // Zero-initialize first: Rust struct literals leave implicit C padding
+        // bytes (e.g. before RefPicList0, around the weight-flag bytes)
+        // uninitialized, and VA reserved/padding bytes must be zero.
+        let mut buf = unsafe { std::mem::zeroed::<bindings::VASliceParameterBufferH264>() };
+        buf.slice_data_size = slice_data_size;
+        buf.slice_data_offset = slice_data_offset;
+        buf.slice_data_flag = slice_data_flag;
+        buf.slice_data_bit_offset = slice_data_bit_offset;
+        buf.first_mb_in_slice = first_mb_in_slice;
+        buf.slice_type = slice_type;
+        buf.direct_spatial_mv_pred_flag = direct_spatial_mv_pred_flag;
+        buf.num_ref_idx_l0_active_minus1 = num_ref_idx_l0_active_minus1;
+        buf.num_ref_idx_l1_active_minus1 = num_ref_idx_l1_active_minus1;
+        buf.cabac_init_idc = cabac_init_idc;
+        buf.slice_qp_delta = slice_qp_delta;
+        buf.disable_deblocking_filter_idc = disable_deblocking_filter_idc;
+        buf.slice_alpha_c0_offset_div2 = slice_alpha_c0_offset_div2;
+        buf.slice_beta_offset_div2 = slice_beta_offset_div2;
+        buf.RefPicList0 = ref_pic_list_0;
+        buf.RefPicList1 = ref_pic_list_1;
+        buf.luma_log2_weight_denom = luma_log2_weight_denom;
+        buf.chroma_log2_weight_denom = chroma_log2_weight_denom;
+        buf.luma_weight_l0_flag = luma_weight_l0_flag;
+        buf.luma_weight_l0 = luma_weight_l0;
+        buf.luma_offset_l0 = luma_offset_l0;
+        buf.chroma_weight_l0_flag = chroma_weight_l0_flag;
+        buf.chroma_weight_l0 = chroma_weight_l0;
+        buf.chroma_offset_l0 = chroma_offset_l0;
+        buf.luma_weight_l1_flag = luma_weight_l1_flag;
+        buf.luma_weight_l1 = luma_weight_l1;
+        buf.luma_offset_l1 = luma_offset_l1;
+        buf.chroma_weight_l1_flag = chroma_weight_l1_flag;
+        buf.chroma_weight_l1 = chroma_weight_l1;
+        buf.chroma_offset_l1 = chroma_offset_l1;
 
         self.0.push(buf);
     }

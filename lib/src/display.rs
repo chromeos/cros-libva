@@ -137,8 +137,9 @@ impl Display {
         None
     }
 
-    /// Returns the handle of this display.
-    pub(crate) fn handle(&self) -> bindings::VADisplay {
+    /// Returns the raw libva display handle, for direct FFI use (e.g.
+    /// `vaCreateImage`/`vaPutImage` surface copies).
+    pub fn handle(&self) -> bindings::VADisplay {
         self.handle
     }
 
