@@ -55,6 +55,7 @@ impl Buffer {
             BufferType::SliceParameter(SliceParameter::AV1(ref mut params)) => {
                 params.inner_mut().len()
             }
+            BufferType::EncQp { pitch, ref data } => data.len().checked_div(pitch).unwrap_or(0),
             _ => 1,
         };
 
@@ -302,6 +303,10 @@ impl Buffer {
             BufferType::EncPackedHeaderData(ref data) => {
                 (data.as_ptr() as *mut std::ffi::c_void, data.len())
             }
+
+            BufferType::EncQp { pitch, ref data } => {
+                (data.as_ptr() as *mut std::ffi::c_void, pitch)
+            }
         };
 
         // Safe because `self` represents a valid `VAContext`. `ptr` and `size` are also ensured to
@@ -408,8 +413,8 @@ impl Drop for Buffer {
             bindings::vaDestroyBuffer(self.context.display().handle(), self.id)
         });
 
-        if status.is_err() {
-            error!("vaDestroyBuffer failed: {}", status.unwrap_err());
+        if let Err(error) = status {
+            error!("vaDestroyBuffer failed: {}", error);
         }
     }
 }
@@ -448,6 +453,9 @@ pub enum BufferType {
     EncPackedHeaderParameter(EncPackedHeaderParameter),
     /// Abstraction over `VAEncPackedHeaderDataBufferType`.
     EncPackedHeaderData(Vec<u8>),
+    /// Abstraction over `VAEncQPBufferType`: one QP per macroblock, `data.len() / pitch` rows of
+    /// `pitch` bytes each.
+    EncQp { pitch: usize, data: Vec<u8> },
 }
 
 impl BufferType {
@@ -494,6 +502,8 @@ impl BufferType {
             BufferType::EncPackedHeaderData(_) => {
                 bindings::VABufferType::VAEncPackedHeaderDataBufferType
             }
+
+            BufferType::EncQp { .. } => bindings::VABufferType::VAEncQPBufferType,
         }
     }
 }
@@ -692,8 +702,8 @@ impl<'p> Drop for MappedCodedBuffer<'p> {
             bindings::vaUnmapBuffer(self.buffer.0.context.display().handle(), self.buffer.id())
         });
 
-        if status.is_err() {
-            error!("vaUnmapBuffer failed: {}", status.unwrap_err());
+        if let Err(error) = status {
+            error!("vaUnmapBuffer failed: {}", error);
         }
     }
 }
